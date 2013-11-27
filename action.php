@@ -18,6 +18,29 @@ class action_plugin_tagfilter extends DokuWiki_Action_Plugin {
 	 */
 	function register(&$controller) {
 		$controller->register_hook('TOOLBAR_DEFINE', 'AFTER', $this, 'insert_button', array ());
+		$controller->register_hook('DOKUWIKI_STARTED', 'AFTER',  $this, '_addparams');
+	}
+	
+	function _addparams(&$event, $param) {
+		global $JSINFO;
+		global $INPUT;
+		// filter for ft* in GET 
+		$get_tagfilter = array_filter(array_keys($_GET),function($value){
+			return strpos($value,'tf') === 0;
+		});
+
+		//filter for ft<key>_<label> and add it to JSINFO to select it via JavaScript
+		foreach($get_tagfilter as $param){
+			$ret = preg_match('/^tf(\d+)\_([\w\:הצü\-]+)/',$param,$matches);
+
+			if($ret && is_numeric($matches[1]) && $matches[2])
+				$JSINFO['tagfilter'][] = array(
+					'key' => $matches[1],
+					'label'=>$matches[2],
+					'values' =>$INPUT->str($param)?array($INPUT->str($param)):$INPUT->arr($param)
+				);
+		}
+		
 	}
 	
 	/**

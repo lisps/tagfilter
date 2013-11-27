@@ -101,7 +101,11 @@ class syntax_plugin_tagfilter extends DokuWiki_Syntax_Plugin {
 
 			$renderer->cdata("\n");
 				
-			$form = new Doku_Form('tagdd_'.$opt['id']);
+			$form = new Doku_Form(array(
+				'id'=>'tagdd_'.$opt['id'],
+				'data-idx'=>$opt['id'],
+				'data-plugin'=>'tagfilter',
+			));
 			$renderer->cdata("\n");
 			//Fieldset manuell hinzufügen da ein style Parameter übergeben werden soll
 			$form->addElement(array('_elem'=>'openfieldset', '_legend'=>'Tagfilter','style'=>'text-align:left;width:100%','id'=>'__tagfilter_'.$opt['id']));
@@ -132,8 +136,8 @@ class syntax_plugin_tagfilter extends DokuWiki_Syntax_Plugin {
 				$options = array(//generelle Optionen für DropDownListe onchange->submit von id namespace und den flags für pagelist
 					'onChange'=>'tagfilter_submit('.$opt['id'].','.json_encode($opt['ns']).','.json_encode($opt['flags']).')',
 					'class'=>'tagdd_select tagfilter tagdd_select_'.$opt['id'],
-					'data-placeholder'=>$label.' '.$this->getLang('choose'),
-					
+					'data-placeholder'=>hsc($label.' '.$this->getLang('choose')),
+					'data-label'=>hsc(utf8_strtolower(trim($label))),
 					);
 				if($flags['multi']){ //unterscheidung ob Multiple oder Single
 					$options['multiple']='multiple';
@@ -146,38 +150,15 @@ class syntax_plugin_tagfilter extends DokuWiki_Syntax_Plugin {
 				$label = $tagselect_r['label'][$key];
 				$tags = $tagselect_r['tags'][$key];
 				$selectedTags = $tagselect_r['selectedTags'][$key];
-				
+
 				foreach($selectedTags as &$item)
 					$item = utf8_strtolower(trim($item));
-				
-				//get input param vie tf(id)_label = xxx 
-				$input_param = array();
-				$input_var = 'tf'.$opt['id'].'_' . utf8_strtolower($label);
-				//allow single value and array params
-				if($INPUT->str($input_var)){
-					$input_param[] = $INPUT->str($input_var);
-				} else if($INPUT->arr($input_var)){
-					$input_param = $INPUT->arr($input_var);
-				}
-				foreach($input_param as $input_tag){
-					$input_tag = utf8_strtolower(trim($input_tag));
-					//in tags?
-					if(in_array($input_tag,array_keys($tags)) && !in_array($input_tag,$selectedTags)){
-						$selectedTags[] = $input_tag;
-					} else {
-						foreach(array_keys($tags) as $available_tag){
-							if(strpos($available_tag,$input_tag) !== FALSE && !in_array($available_tag,$selectedTags)){
-								$selectedTags[] = $available_tag;
-							}
-						}
-					}
-				}
-				
 					
 				$options = array(//generelle Optionen für DropDownListe onchange->submit von id namespace und den flags für pagelist
 					'onChange'=>'tagfilter_submit('.$opt['id'].','.json_encode($opt['ns']).','.json_encode($opt['flags']).')',
 					'class'=>'tagdd_select tagfilter tagdd_select_'.$opt['id'],
-					'data-placeholder'=>$label.' '.$this->getLang('choose'),
+					'data-placeholder'=>hsc($label.' '.$this->getLang('choose')),
+					'data-label'=>hsc(str_replace(' ','_',utf8_strtolower(trim($label)))),
 					
 					);
 				if($flags['multi']){ //unterscheidung ob Multiple oder Single
