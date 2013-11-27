@@ -41,7 +41,7 @@ function tagfilter_submit(id,ns,flags)
 		for(k=0;k<e.options.length;k++){
 			if(e.options[k].selected && e.options[k].value != ''){
 				if(e.id == '__tagfilter_page_'+id) {
-					pagesearch.push(e.options[k].value);
+					pagesearch.push(e.options[k].value);	
 				}
 				else {
 					form[i].push(e.options[k].value);
@@ -55,6 +55,7 @@ function tagfilter_submit(id,ns,flags)
 		form[0] = new Array();
 		for(i=0;i<$elements.length;i++){
 			e = $elements[i];
+			if(e.id == '__tagfilter_page_'+id) continue; //do not sent the pagenames
 			for(k=0;k<e.options.length;k++){
 				form[0].push(e.options[k].value);
 			}

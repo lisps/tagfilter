@@ -6,5 +6,7 @@
  * @author  lisps    
  */
  
-$conf['DropDownList_size'] = 5;   //Url to Flyspray 
+$conf['DropDownList_size'] = 5; 
 $conf['nsTagImage'] = 'tags';
+$conf['cache_age'] = 0; 
+

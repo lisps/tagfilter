@@ -7,3 +7,4 @@
  */
 $lang['DropDownList_size'] ='Die Größe der DropDownListe, nur wenn multiple gesetzt ist';
 $lang['nsTagImage']='Namespace für Tag-Bilder';
+$lang['cache_age']='Wie lange soll die Seite gecached werden in Sec';

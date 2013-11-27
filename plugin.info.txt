@@ -1,7 +1,7 @@
 base    tagfilter
 author  lisps
 email   
-date    2013-10-25
+date    2013-11-27
 name    tagfilter
 desc    easy tag search
 url     http://dokuwiki.org/plugin:tagfilter

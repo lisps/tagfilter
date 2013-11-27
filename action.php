@@ -28,8 +28,8 @@ class action_plugin_tagfilter extends DokuWiki_Action_Plugin {
 			'type'   => 'format',
 			'title' => 'Tagfilter plugin',
 			'icon'   => '../../plugins/tagfilter/tagfilter.png',
-			'sample' => '<S/M/SC/MC> <namespace>? <Label>=<TagAusdruck>=<Tags Selected>|... &<pagelistoptions>',
-			'open' => '{{tagfilter',
+			'sample' => '<namespace>? <Label>=<TagAusdruck>=<Tags Selected>|... &<pagelistoptions (&multi&nouser&chosen)>',
+			'open' => '{{tagfilter>',
 			'close'=>'}}',
 			'insert'=>'',
 		);

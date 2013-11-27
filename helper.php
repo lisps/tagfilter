@@ -88,28 +88,31 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 		return  $fullTags;
 	}
 	
-	
+	protected $_tagsByNamespace = array();
 	function getTagsByNamespace($ns = ''){
-		$Htag  =$this->Htag;
-		if(!$Htag)return false;
-	
-		if($this->isNewTagVersion())
-			return array_keys($this->getTagsByRegExp_New('.*',$ns));
+		if(!isset($this->_tagsByNamespace[$ns])) {
+			$Htag  =$this->Htag;
+			if(!$Htag)return false;
 		
-		$index = array_filter($Htag->topic_idx);
-		$tags=array();
-		if($ns === ''){
-			$tags = array_keys($index);
-		}
-		else {
-			foreach ($index as $tag=>$page_r){
-				if($this->_checkPageArrayInNamespace($page_r,$ns)){
-					$tags[]=$tag;
+			if($this->isNewTagVersion())
+				return array_keys($this->getTagsByRegExp_New('.*',$ns));
+			
+			$index = array_filter($Htag->topic_idx);
+
+			$tags=array();
+			if($ns === ''){
+				$tags = array_keys($index);
+			} else {
+				foreach ($index as $tag=>$page_r){
+					if($this->_checkPageArrayInNamespace($page_r,$ns)){
+						$tags[]=$tag;
+					}
 				}
+
 			}
+			$this->_tagsByNamespace[$ns]=array_unique($tags);
 		}
-		$tags=array_unique($tags);
-		return $tags;
+		return $this->_tagsByNamespace[$ns];
 	}
 	
 	function _checkPageArrayInNamespace($page_r,$ns){
@@ -290,18 +293,53 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 		return false;
 	}
 	
-	function getAllPages($ns,$tags){
+	/*
+	 * return all pages defined by tag_list_r in a specific namespace
+	 * 
+	 * @param ns string the namespace to look in
+	 * @param tag_list_r array an array containing strings with tags seperated by ' '
+	 *
+	 */
+	function getAllPages($ns,$tag_list_r){
 		$pages = array();
 		$pages[''] = '';
-		foreach($tags as $tag){ 
-			$page_r = $this->Htag->getTopic($ns,'',$tag);
-			foreach($page_r as $page){
-				$pages[$page['id']]=strip_tags($page['title']);  //FIXME hsc() doesent work with chosen
-			}
+		
+		$tag_list = implode(' ',$tag_list_r);
+
+		$page_r = $this->getPagesByTags($ns,$tag_list);
+
+		foreach($page_r as $page){
+			$title = p_get_metadata($page, 'title', METADATA_DONT_RENDER);
+			$title = $title?$title:$page;
+			$pages[$page]=strip_tags($title);  //FIXME hsc() doesent work with chosen
 		}
+
 		asort($pages);
 		return $pages;
 	}
-		
+	
+	/*
+	 * gets the pages defined by tag_list
+	 *
+	 * partially copied from tag->helper with less checks (on cache) and no meta lookups
+	 * @param ns string the namespace to look in
+	 * @param tag_list string the tags seperated by ' '
+	 *
+	 * @return array array of page ids
+	 */
+	function getPagesByTags($ns,$tag_list) {
+		$page_names = array();
+		$tags_parsed = $this->Htag->_parseTagList($tag_list, true);
+		$pages_lookup = $this->Htag->_tagIndexLookup($tags_parsed);
+		foreach($pages_lookup as  $page_lookup){
+			// filter by namespace, root namespace is identified with a dot // root namespace is specified, discard all pages who lay outside the root namespace
+			if(($ns == '.' && (getNS($page_lookup) == false)) || ($ns && (strpos(':'.getNS($page_lookup).':', ':'.$ns.':') === 0))) {
+				$perm = auth_quickaclcheck($page_lookup);
+				if (!($perm < AUTH_READ))
+					$page_names[] = $page_lookup;
+			}
+		}
+		return $page_names;		
+	}
 }
 

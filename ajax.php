@@ -18,13 +18,13 @@ $pagesearch = json_decode($_POST['pagesearch']);
 
 $form = array_filter($form);//leere Einträge ausfiltern
 
-$tags = array();
+$tag_list_r = array();
 
 foreach($form as $item){ //die Einträge aus einer Dropdown list zusammenfügen
-	$tags[]=  implode(' ',array_filter($item));
+	$tag_list_r[]=  implode(' ',array_filter($item));
 }
 
-$tags = array_filter($tags);
+$tag_list_r = array_filter($tag_list_r);
 //Tag plugin laden
 $Htag =& plugin_load('helper', 'tag');
 if(!$Htag){
@@ -32,26 +32,31 @@ if(!$Htag){
 	return true; // nothing to display
 }
 
-//Pages für die einzelnen Dropdown Listen finden
-$pages = array();
-foreach($tags as $tag){ 
-	$pages[] = $Htag->getTopic($ns,'',$tag);
-}
+//lookup the pages from the taglist
+//partially copied from tag->helper with less checks and no meta lookups
 
-//jetzt muss die Schnittmenge der Pages gefunden werden.
-//Dazu wird der ID Eintrag(sprich Seitenname) herausgezogen und mit array_intersect die Schnittmenge gebildet
 $page_names = array();
-foreach($pages as $key=>$page){
-	$page_names[$key]=array();
-	foreach($page as $index=>$item){
-		$page_names[$key][] = $item['id'];
+foreach($tag_list_r as $key=>$tag_list){ 
+	$tags_parsed = $Htag->_parseTagList($tag_list, true);
+	$pages_lookup = $Htag->_tagIndexLookup($tags_parsed);
+	foreach($pages_lookup as  $page_lookup){
+		// filter by namespace, root namespace is identified with a dot // root namespace is specified, discard all pages who lay outside the root namespace
+		if(($ns == '.' && (getNS($page_lookup) == false)) || ($ns && (strpos(':'.getNS($page_lookup).':', ':'.$ns.':') === 0))) {
+			$perm = auth_quickaclcheck($page_lookup);
+            if (!($perm < AUTH_READ))
+				$page_names[$key][] = $page_lookup;
+		}
 	}
 }
-$pages_intersect = array();
-$pages_intersect = array_shift($page_names);
+
+
+if(!$pages_intersect = array_shift($page_names)){
+	$pages_intersect = array();
+}
 foreach($page_names as $names){
 	$pages_intersect = array_intersect($pages_intersect,$names);
 }
+
 if(!empty($pagesearch)){
 	$pages_intersect = array_intersect($pages_intersect,$pagesearch);
 }
@@ -60,26 +65,37 @@ if(count($pages_intersect)==0){ //wenn pages_intersect keine Werte enthält gibt
 	return true; // nothing to display
 }
 
-//nun haben wir die Schnittmenge der Pages und müssen nur noch aus den bereits gefundenen Seiten diese rausfiltern
-$pages_pagelist = array();
-foreach($pages as $page){
-	foreach($page as $index=>$item){
-		if( in_array($item['id'],$pages_intersect) ){
-			$pages_intersect = array_diff($pages_intersect,array($item['id']));
-			$pages_pagelist[]=$item;
-		}
-	}
+//Template nicht anzeigen
+$pages_intersect = array_filter($pages_intersect,function($val){
+	return strpos($val,'_template')===false?true:false;
+});
+
+$pages = array();
+foreach($pages_intersect as $page){
+	$title = p_get_metadata($page, 'title', METADATA_DONT_RENDER);
+	$pages[$title?$title:$page] = array(
+		'title' => $title?$title:$page,
+		'id' => $page
+		);
 }
+if(in_array('rsort',$flags)) {
+	krsort($pages);
+} else {
+	ksort($pages);
+}
+/*
+$pages = array();
+foreach($pages_intersect as $page)
+$pages[]= array('id'=>$page);
 
-$pages = $pages_pagelist;
-
-
+*/
 // let Pagelist Plugin do the work for us
 if (plugin_isdisabled('pagelist')
 		|| (!$pagelist = plugin_load('helper', 'pagelist'))) {
 	msg($this->getLang('missing_pagelistplugin'), -1);
 	return false;
 }
+
 $pagetopics = array();
 $pagelist->setFlags($flags);
 $pagelist->startList();

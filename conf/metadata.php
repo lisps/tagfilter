@@ -7,5 +7,6 @@
  */
 
 $meta['DropDownList_size'] =  array('numeric');
+$meta['cache_age'] =  array('numeric');
 $meta['nsTagImage'] =  array('string');
 
