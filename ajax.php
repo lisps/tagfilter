@@ -1,6 +1,6 @@
 <?php
 /**
- * DokuWiki Plugin tagfilter (Ajax Component) 
+ * DokuWiki Plugin tagfilter (Ajax Component)
  *
  * @license GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author  lisps
@@ -8,7 +8,7 @@
 if(!defined('DOKU_INC')) define('DOKU_INC',realpath(dirname(__FILE__).'/../../../').'/');
 require_once(DOKU_INC.'inc/init.php');
 
-#Variables  
+#Variables
 $idcount = intval($_POST["id"]);
 $form = json_decode($_POST["form"]);
 $ns = json_decode($_POST["ns"]);
@@ -36,7 +36,7 @@ if(!$Htag){
 //partially copied from tag->helper with less checks and no meta lookups
 
 $page_names = array();
-foreach($tag_list_r as $key=>$tag_list){ 
+foreach($tag_list_r as $key=>$tag_list){
 	$tags_parsed = $Htag->_parseTagList($tag_list, true);
 	$pages_lookup = $Htag->_tagIndexLookup($tags_parsed);
 	foreach($pages_lookup as  $page_lookup){
@@ -66,9 +66,8 @@ if(count($pages_intersect)==0){ //wenn pages_intersect keine Werte enthält gibt
 }
 
 //Template nicht anzeigen
-$pages_intersect = array_filter($pages_intersect,function($val){
-	return strpos($val,'_template')===false?true:false;
-});
+$f = create_function('$val', 'return strpos($val,"_template")===false?true:false;');
+$pages_intersect = array_filter($pages_intersect,$f);
 
 $pages = array();
 foreach($pages_intersect as $page){
@@ -104,7 +103,7 @@ foreach ($pages as $page) {
 	$pagelist->addPage($page);
 	$pagetopics[$page['id']]=$page['title'];
 }
-$text = $pagelist->finishList();      
+$text = $pagelist->finishList();
 
 echo json_encode(array('id'=>$idcount,'text'=>$text,'topics'=>$pagetopics));
 
