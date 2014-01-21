@@ -14,6 +14,7 @@ $form = json_decode($_POST["form"]);
 $ns = json_decode($_POST["ns"]);
 $flags = json_decode($_POST["flags"]);
 $pagesearch = json_decode($_POST['pagesearch']);
+global $lang;
 
 
 $form = array_filter($form);//leere Einträge ausfiltern
@@ -61,7 +62,7 @@ if(!empty($pagesearch)){
 	$pages_intersect = array_intersect($pages_intersect,$pagesearch);
 }
 if(count($pages_intersect)==0){ //wenn pages_intersect keine Werte enthält gibt es keine gefundenen Seiten
-	echo json_encode(array('id'=>$idcount,'text'=>'<i>Nichts</i>','topics'=>array()));
+	echo json_encode(array('id'=>$idcount,'text'=>'<i>'.$lang['nothingfound'].'</i>','topics'=>array()));
 	return true; // nothing to display
 }
 
