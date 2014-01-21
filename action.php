@@ -1,6 +1,6 @@
 <?php
 /**
- * DokuWiki Plugin tagfilter (Action Component) 
+ * DokuWiki Plugin tagfilter (Action Component)
  *
  * inserts a button into the toolbar
  *
@@ -20,14 +20,13 @@ class action_plugin_tagfilter extends DokuWiki_Action_Plugin {
 		$controller->register_hook('TOOLBAR_DEFINE', 'AFTER', $this, 'insert_button', array ());
 		$controller->register_hook('DOKUWIKI_STARTED', 'AFTER',  $this, '_addparams');
 	}
-	
+
 	function _addparams(&$event, $param) {
 		global $JSINFO;
 		global $INPUT;
-		// filter for ft* in GET 
-		$get_tagfilter = array_filter(array_keys($_GET),function($value){
-			return strpos($value,'tf') === 0;
-		});
+    // filter for ft* in GET
+    $f = create_function('$value', 'return strpos($value,"tf") === 0;');
+    $get_tagfilter = array_filter(array_keys($_GET),$f);
 
 		//filter for ft<key>_<label> and add it to JSINFO to select it via JavaScript
 		foreach($get_tagfilter as $param){
@@ -40,14 +39,14 @@ class action_plugin_tagfilter extends DokuWiki_Action_Plugin {
 					'values' =>$INPUT->str($param)?array($INPUT->str($param)):$INPUT->arr($param)
 				);
 		}
-		
+
 	}
-	
+
 	/**
 	 * Inserts the toolbar button
 	 */
 	function insert_button(&$event, $param) {
-		$event->data[] = array(	
+		$event->data[] = array(
 			'type'   => 'format',
 			'title' => 'Tagfilter plugin',
 			'icon'   => '../../plugins/tagfilter/tagfilter.png',
