@@ -7,3 +7,4 @@
  */
 $lang['choose'] = 'choosing';
 $lang['Delete filter']='Delete filter';
+$lang['missing_plugin'] = "<i>Plugin %s is not available or invalid.</i>";

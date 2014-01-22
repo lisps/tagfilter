@@ -68,11 +68,11 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 		if(!$Htag)return false;
 		$info=$Htag->getInfo();
 		if($this->isNewTagVersion())
-			return $this->getTagsByRegExp_New($tags, $ns);
+			return $this->getTagsByRegExp_New($tags, $ns,false);
 		$fullTags = array(); //gefundene Tags
 		 
 		$tags = $Htag->_parseTagList($tags, true);
-		$alltags = $this->getTagsByNamespace($ns);
+		$alltags = $this->getTagsByNamespace($ns,false);
 		foreach($tags  as  $tag){
 			foreach($alltags as $alltag){
 				if(@preg_match('/^'.$tag.'$/',$alltag)){
@@ -89,19 +89,31 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 	}
 	
 	protected $_tagsByNamespace = array();
-	function getTagsByNamespace($ns = ''){
+	function getTagsByNamespace($ns = '',$acl_safe = true){
 		if(!isset($this->_tagsByNamespace[$ns])) {
 			$Htag  =$this->Htag;
 			if(!$Htag)return false;
 		
 			if($this->isNewTagVersion())
-				return array_keys($this->getTagsByRegExp_New('.*',$ns));
+				return array_keys($this->getTagsByRegExp_New('.*',$ns,$acl_safe));
 			
 			$index = array_filter($Htag->topic_idx);
 
 			$tags=array();
 			if($ns === ''){
-				$tags = array_keys($index);
+				if($acl_safe) {
+					foreach($index as $tag=>$page_r){
+						foreach($page_r as $page) {
+							$perm = auth_quickaclcheck($page);
+							if (!$perm < AUTH_READ){
+								$tags[]=$tag;
+								break;
+							}
+						}
+					}
+				} else {
+					$tags = array_keys($index);
+				}
 			} else {
 				foreach ($index as $tag=>$page_r){
 					if($this->_checkPageArrayInNamespace($page_r,$ns)){
@@ -115,12 +127,16 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 		return $this->_tagsByNamespace[$ns];
 	}
 	
-	function _checkPageArrayInNamespace($page_r,$ns){
+	function _checkPageArrayInNamespace($page_r,$ns,$acl_safe = true){
 		$Htag  =$this->Htag;
 		if(!$Htag)return false;
 		foreach($page_r as $page){
 			if ($ns && (strpos(':'.getNS($page).':', ':'.$ns.':') === 0)){
-				return true;
+				if (!$acl_safe) return true;
+				$perm = auth_quickaclcheck($page);
+				if (!$perm < AUTH_READ)
+					return true;
+
 			}
 			//if($Htag->_isVisible($page,$ns))
 			//	return true;
@@ -129,12 +145,18 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 		return false;
 	}
 	
-	function _checkPageArrayInNamespace_New($page_r,$ns){
+	function _checkPageArrayInNamespace_New($page_r,$ns,$acl_safe = true){
 		$Htag  =$this->Htag;
 		if(!$Htag)return false;
 		foreach($page_r as $page){
-			if($Htag->_isVisible($page,$ns))
-				return true;
+			if($Htag->_isVisible($page,$ns)) {
+				if (!$acl_safe) return true;
+				$perm = auth_quickaclcheck($page);
+				if (!$perm < AUTH_READ)
+					return true;
+			
+			}
+
 		}
 		return false;
 	}
@@ -172,11 +194,11 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 	function _tagCompare ($tag1,$tag2){
 		return $tag1==$tag2;
 	}
-	function getTagsByRegExp_New($tag_expr,$ns = ''){
+	function getTagsByRegExp_New($tag_expr,$ns = '',$acl_safe=true){
 		$tags = $this->getIndex('subject','_w');
 		$tag_label_r = array();
 		foreach($tags  as  $tag){
-			if(@preg_match('/^'.$tag_expr.'$/i',$tag) && $this->_checkTagInNamespace($tag,$ns)){
+			if(@preg_match('/^'.$tag_expr.'$/i',$tag) && $this->_checkTagInNamespace($tag,$ns,$acl_safe)){
 				//$label =stristr($tag,':');
 				$label = strrchr($tag,':');
 				$label = $label !=''?$label:$tag;
@@ -186,11 +208,11 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 		asort($tag_label_r);
 		return $tag_label_r;
 	}
-	function _checkTagInNamespace($tag,$ns){
+	function _checkTagInNamespace($tag,$ns,$acl_safe=true){
 		if($ns == '') return true;
 		$indexer = idx_get_indexer();
 		$pages = $indexer->lookupKey('subject', $tag, array($this, '_tagCompare'));
-		return $this->_checkPageArrayInNamespace_New($pages,$ns);
+		return $this->_checkPageArrayInNamespace_New($pages,$ns,$acl_safe);
 	}
 	
 	/*
@@ -333,7 +355,7 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 		$pages_lookup = $this->Htag->_tagIndexLookup($tags_parsed);
 		foreach($pages_lookup as  $page_lookup){
 			// filter by namespace, root namespace is identified with a dot // root namespace is specified, discard all pages who lay outside the root namespace
-			if(($ns == '.' && (getNS($page_lookup) == false)) || ($ns && (strpos(':'.getNS($page_lookup).':', ':'.$ns.':') === 0))) {
+			if((($ns == '.') && (getNS($page_lookup) == false)) || ( (strpos(':'.getNS($page_lookup).':', ':'.$ns.':') === 0)) || $ns === '') {
 				$perm = auth_quickaclcheck($page_lookup);
 				if (!($perm < AUTH_READ))
 					$page_names[] = $page_lookup;

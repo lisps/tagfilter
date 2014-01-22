@@ -8,13 +8,28 @@
 if(!defined('DOKU_INC')) define('DOKU_INC',realpath(dirname(__FILE__).'/../../../').'/');
 require_once(DOKU_INC.'inc/init.php');
 
-#Variables
-$idcount = intval($_POST["id"]);
+global $lang;
+
+//Variables
+$requested_id = intval($_POST["id"]);
 $form = json_decode($_POST["form"]);
 $ns = json_decode($_POST["ns"]);
 $flags = json_decode($_POST["flags"]);
 $pagesearch = json_decode($_POST['pagesearch']);
 
+
+//load tagfilter plugin
+$Htagfilter = plugin_load('helper', 'tagfilter');
+
+//load pagelist plugin
+if (!$pagelist = plugin_load('helper', 'pagelist')) {
+	send_response(sprintf($Htagfilter->getLang('missing_plugin'),'pagelist'));
+}
+
+//load tag plugin
+if (!$Htag = plugin_load('helper', 'tag')) {
+	send_response(sprintf($Htagfilter->getLang('missing_plugin'),'tag'));
+}
 
 $form = array_filter($form);//leere Einträge ausfiltern
 
@@ -25,23 +40,16 @@ foreach($form as $item){ //die Einträge aus einer Dropdown list zusammenfügen
 }
 
 $tag_list_r = array_filter($tag_list_r);
-//Tag plugin laden
-$Htag =& plugin_load('helper', 'tag');
-if(!$Htag){
-	echo json_encode(array('id'=>$idcount,'text'=>'<i>Das Tag Plugin wird benötigt</i>'));
-	return true; // nothing to display
-}
 
 //lookup the pages from the taglist
 //partially copied from tag->helper with less checks and no meta lookups
-
 $page_names = array();
 foreach($tag_list_r as $key=>$tag_list){
 	$tags_parsed = $Htag->_parseTagList($tag_list, true);
 	$pages_lookup = $Htag->_tagIndexLookup($tags_parsed);
 	foreach($pages_lookup as  $page_lookup){
 		// filter by namespace, root namespace is identified with a dot // root namespace is specified, discard all pages who lay outside the root namespace
-		if(($ns == '.' && (getNS($page_lookup) == false)) || ($ns && (strpos(':'.getNS($page_lookup).':', ':'.$ns.':') === 0))) {
+		if(($ns == '.' && (getNS($page_lookup) == false)) || ($ns && (strpos(':'.getNS($page_lookup).':', ':'.$ns.':') === 0)) || $ns === '') {
 			$perm = auth_quickaclcheck($page_lookup);
             if (!($perm < AUTH_READ))
 				$page_names[$key][] = $page_lookup;
@@ -61,8 +69,7 @@ if(!empty($pagesearch)){
 	$pages_intersect = array_intersect($pages_intersect,$pagesearch);
 }
 if(count($pages_intersect)==0){ //wenn pages_intersect keine Werte enthält gibt es keine gefundenen Seiten
-	echo json_encode(array('id'=>$idcount,'text'=>'<i>Nichts</i>','topics'=>array()));
-	return true; // nothing to display
+	send_response('<i>'.$lang['nothingfound'].'</i>');
 }
 
 //Template nicht anzeigen
@@ -89,11 +96,7 @@ $pages[]= array('id'=>$page);
 
 */
 // let Pagelist Plugin do the work for us
-if (plugin_isdisabled('pagelist')
-		|| (!$pagelist = plugin_load('helper', 'pagelist'))) {
-	msg($this->getLang('missing_pagelistplugin'), -1);
-	return false;
-}
+
 
 $pagetopics = array();
 $pagelist->setFlags($flags);
@@ -101,9 +104,13 @@ $pagelist->startList();
 
 foreach ($pages as $page) {
 	$pagelist->addPage($page);
-	$pagetopics[$page['id']]=$page['title'];
 }
 $text = $pagelist->finishList();
 
-echo json_encode(array('id'=>$idcount,'text'=>$text,'topics'=>$pagetopics));
+send_response($text);
 
+function send_response($text) {
+    global $requested_id;
+    echo json_encode(array('id'=>$requested_id,'text'=>$text));
+    exit;
+}

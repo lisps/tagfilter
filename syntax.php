@@ -146,7 +146,8 @@ class syntax_plugin_tagfilter extends DokuWiki_Syntax_Plugin {
 				$form->addElement(form_makeListboxField($label, $tags, $selectedTags , $label, $id, 'tagfilter', $options));
 			}
 			foreach($opt['tags'] as $key=>$tag){
-				$tag = explode("=",$tag);//aufsplitten in Label,RegExp,DefaultWert
+				$id=false;
+                $tag = explode("=",$tag);//aufsplitten in Label,RegExp,DefaultWert
 				$label = $tagselect_r['label'][$key];
 				$tags = $tagselect_r['tags'][$key];
 				$selectedTags = $tagselect_r['selectedTags'][$key];
