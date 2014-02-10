@@ -1,0 +1,2 @@
+https://github.com/dokufreaks/plugin-tag.git          lib/plugins/tag
+https://github.com/dokufreaks/plugin-pagelist.git     lib/plugins/pagelist
