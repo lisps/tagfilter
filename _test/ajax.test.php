@@ -29,7 +29,12 @@ class plugin_tagfilter_ajax_test extends DokuWikiTest {
         $response = ob_get_contents();
         ob_end_clean();
         
-        $this->assertEquals('{"id":0,"text":"<i>Nothing was found.<\/i>"}', $response);
+        if(isset($lang['nothingfound'])) {
+            $this->assertEquals('{"id":0,"text":"<i>Nothing was found.<\/i>"}', $response);
+        }
+        else {
+            $this->assertEquals('{"id":0,"text":"<i><\/i>"}', $response);
+        }
     }
     
     public function test_ajax_request_alltags() {
