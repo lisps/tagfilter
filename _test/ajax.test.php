@@ -16,6 +16,7 @@ class plugin_tagfilter_ajax_test extends DokuWikiTest {
     
     public function test_ajax_request_notags() {
         global $INPUT;
+        global $lang;
         
         $INPUT->set('id', 0);
         $INPUT->set('form',json_encode(array()));
