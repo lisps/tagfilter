@@ -24,11 +24,14 @@ class plugin_tagfilter_ajax_test extends DokuWikiTest {
         $INPUT->set('flags',json_encode(array()));
         $INPUT->set('pagesearch',json_encode(array()));
         
+        $er = error_reporting();
+        error_reporting($er ^ E_STRICT);
         ob_start();
         $data = 'plugin_tagfilter';
         trigger_event('AJAX_CALL_UNKNOWN',$data);
         $response = ob_get_contents();
         ob_end_clean();
+        error_reporting($er);
         
         if(isset($lang['nothingfound'])) {
             $this->assertEquals('{"id":0,"text":"<i>Nothing was found.<\/i>"}', $response);
@@ -47,7 +50,8 @@ class plugin_tagfilter_ajax_test extends DokuWikiTest {
         $INPUT->set('flags',json_encode(array()));
         $INPUT->set('pagesearch',json_encode(array()));
     
-        
+        $er = error_reporting();
+        error_reporting($er ^ E_STRICT);
         ob_start();
         $data = 'plugin_tagfilter';
         trigger_event('AJAX_CALL_UNKNOWN',$data);
@@ -56,6 +60,7 @@ class plugin_tagfilter_ajax_test extends DokuWikiTest {
         $response2 = json_decode($response1);
         $response = (array)$response2;
         ob_end_clean();
+        error_reporting($er);
         if(!isset($response['text'])){
             var_dump(array($response1,$response2,$response));
         } else {
@@ -73,14 +78,16 @@ class plugin_tagfilter_ajax_test extends DokuWikiTest {
         $INPUT->set('ns',json_encode('test:plugin_tagfilter:tags'));
         $INPUT->set('flags',json_encode(array()));
         $INPUT->set('pagesearch',json_encode(array()));
-    
+        
+        $er = error_reporting();
+        error_reporting($er ^ E_STRICT);
         ob_start();
         $data = 'plugin_tagfilter';
         trigger_event('AJAX_CALL_UNKNOWN',$data);
         $response = (array)json_decode(ob_get_contents());
         ob_end_clean();
-        
-        $this->assertFalse(strpos($response->text, 'id=test:plugin_tagfilter:tags:tagpage1') !== false);
+        error_reporting($er);
+        $this->assertFalse(strpos($response['text'], 'id=test:plugin_tagfilter:tags:tagpage1') !== false);
         $this->assertContains('id=test:plugin_tagfilter:tags:tagpage2', $response['text']);
     
     }
@@ -94,13 +101,15 @@ class plugin_tagfilter_ajax_test extends DokuWikiTest {
         $INPUT->set('flags',json_encode(array()));
         $INPUT->set('pagesearch',json_encode(array('test:plugin_tagfilter:tags:tagpage2')));
     
+        $er = error_reporting();
+        error_reporting($er ^ E_STRICT);
         ob_start();
         $data = 'plugin_tagfilter';
         trigger_event('AJAX_CALL_UNKNOWN',$data);
         $response = (array)json_decode(ob_get_contents());
         ob_end_clean();
-    
-        $this->assertFalse(strpos($response->text, 'id=test:plugin_tagfilter:tags:tagpage1') !== false);
+        error_reporting($er);
+        $this->assertFalse(strpos($response['text'], 'id=test:plugin_tagfilter:tags:tagpage1') !== false);
         $this->assertContains('id=test:plugin_tagfilter:tags:tagpage2', $response['text']);
     
     }
