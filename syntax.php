@@ -112,9 +112,9 @@ class syntax_plugin_tagfilter extends DokuWiki_Syntax_Plugin {
 			p_set_metadata($ID, array('date'=>array('valid'=>array('age'=>0)))); 
 			$renderer->info['cache'] = false;
 		}
-		$Htagfilter  =& plugin_load('helper', 'tagfilter');
-		if($mode == 'metadata') return false;
-		if($mode == 'xhtml') {
+		$Htagfilter = $this->loadHelper('tagfilter');
+		if($mode === 'metadata') return false;
+		if($mode === 'xhtml') {
 
 			$renderer->cdata("\n");
 				
