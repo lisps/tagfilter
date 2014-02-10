@@ -16,7 +16,24 @@ require_once(DOKU_PLUGIN.'syntax.php');
  */
 class syntax_plugin_tagfilter extends DokuWiki_Syntax_Plugin {
 
-    private $idcount = 0;
+    private $_itemPos = array();
+    function incItemPos() {
+        global $ID;
+        if(array_key_exists($ID,$this->_itemPos)) {
+            return $this->_itemPos[$ID]++;
+        } else {
+            $this->_itemPos[$ID] = 1;
+            return 0;
+        }
+    }
+    function getItemPos(){
+        global $ID;
+        if(array_key_exists($ID,$this->_itemPos)) {
+            $this->_itemPos[$ID];
+        } else {
+            return 0;
+        }
+    }
 	
     /*
      * What kind of syntax are we?
@@ -46,7 +63,7 @@ class syntax_plugin_tagfilter extends DokuWiki_Syntax_Plugin {
     function handle($match, $state, $pos, &$handler) {
 		global $ID;
 		
-		$opts['id']=$this->idcount++;
+		$opts['id']=$this->incItemPos();
 
 		$match=trim(substr($match,12,-2));
 

@@ -70,6 +70,7 @@ class action_plugin_tagfilter extends DokuWiki_Action_Plugin {
 		$event->preventDefault();
 		
 		global $INPUT;
+		global $lang;
 
 		//Variables
 		$tagfilter_id = $INPUT->int('id');
