@@ -44,11 +44,12 @@ class plugin_tagfilter_ajax_test extends DokuWikiTest {
         ob_start();
         $data = 'plugin_tagfilter';
         trigger_event('AJAX_CALL_UNKNOWN',$data);
-        $response = json_decode(ob_get_contents());
+        $response = (array)json_decode(ob_get_contents());
         ob_end_clean();
         //echo var_dump($response);
-        $this->assertContains('id=test:plugin_tagfilter:tags:tagpage1', $response->text);
-        $this->assertContains('id=test:plugin_tagfilter:tags:tagpage2', $response->text);
+        
+        $this->assertContains('id=test:plugin_tagfilter:tags:tagpage1', $response['text']);
+        $this->assertContains('id=test:plugin_tagfilter:tags:tagpage2', $response['text']);
 
     }
     
@@ -64,11 +65,11 @@ class plugin_tagfilter_ajax_test extends DokuWikiTest {
         ob_start();
         $data = 'plugin_tagfilter';
         trigger_event('AJAX_CALL_UNKNOWN',$data);
-        $response = json_decode(ob_get_contents());
+        $response = (array)json_decode(ob_get_contents());
         ob_end_clean();
         
         $this->assertFalse(strpos($response->text, 'id=test:plugin_tagfilter:tags:tagpage1') !== false);
-        $this->assertContains('id=test:plugin_tagfilter:tags:tagpage2', $response->text);
+        $this->assertContains('id=test:plugin_tagfilter:tags:tagpage2', $response['text']);
     
     }
     
@@ -84,18 +85,18 @@ class plugin_tagfilter_ajax_test extends DokuWikiTest {
         ob_start();
         $data = 'plugin_tagfilter';
         trigger_event('AJAX_CALL_UNKNOWN',$data);
-        $response = json_decode(ob_get_contents());
+        $response = (array)json_decode(ob_get_contents());
         ob_end_clean();
     
         $this->assertFalse(strpos($response->text, 'id=test:plugin_tagfilter:tags:tagpage1') !== false);
-        $this->assertContains('id=test:plugin_tagfilter:tags:tagpage2', $response->text);
+        $this->assertContains('id=test:plugin_tagfilter:tags:tagpage2', $response['text']);
     
     }
 
     protected function _createPages() {
         saveWikiText('test:plugin_tagfilter:tags:tagpage1', '==== Tagpage1 ===='.DOKU_LF.'{{tag>cat1:blorg cat2:a cat3:1}}', 'test');
         saveWikiText('test:plugin_tagfilter:tags:tagpage2', '==== Tagpage2 ===='.DOKU_LF.'{{tag>cat1:blorg cat2:b cat3:2}}', 'test');
-        saveWikiText('test:plugin_tagfilter:start', '{{tagfilter>test:plugin_tagfilter:tags?T1=cat1:.*|T2=cat2:.*|T3=cat3:.*}}', 'test');
+        saveWikiText('test:plugin_tagfilter:start',  '{{tagfilter>test:plugin_tagfilter:tags?T1=cat1:.*|T2=cat2:.*|T3=cat3:.*}}', 'test');
         saveWikiText('test:plugin_tagfilter:start2', '{{tagfilter>test:plugin_tagfilter:tags?T1=cat1:.*|T2=cat2:.*|T3=cat3:.*&pagesearch}}', 'test');
         saveWikiText('test:plugin_tagfilter:start3', '{{tagfilter>test:plugin_tagfilter:tags?T1=cat1:.*|T2=cat2:.*|T3=cat3:.*&multi}}', 'test');
         

@@ -60,7 +60,7 @@ class syntax_plugin_tagfilter extends DokuWiki_Syntax_Plugin {
     /*
      * Handle the matches
      */
-    function handle($match, $state, $pos, &$handler) {
+    function handle($match, $state, $pos, Doku_Handler &$handler) {
 		global $ID;
 		
 		$opts['id']=$this->incItemPos();
@@ -97,7 +97,7 @@ class syntax_plugin_tagfilter extends DokuWiki_Syntax_Plugin {
     /*
      * Create output
      */
-    function render($mode, &$renderer, $opt)
+    function render($mode, Doku_Renderer  &$renderer, $opt)
 	{
 		global $INFO;
 		global $ID;

@@ -16,7 +16,7 @@ class action_plugin_tagfilter extends DokuWiki_Action_Plugin {
 	/**
 	 * Register the eventhandlers
 	 */
-	function register(&$controller) {
+	function register(Doku_Event_Handler $controller) {
 		$controller->register_hook('TOOLBAR_DEFINE', 'AFTER', $this, 'insert_button', array ());
 		$controller->register_hook('DOKUWIKI_STARTED', 'AFTER',  $this, '_addparams');
 		$controller->register_hook('AJAX_CALL_UNKNOWN', 'BEFORE',  $this, '_ajax_call');
