@@ -52,6 +52,7 @@ class plugin_tagfilter_ajax_test extends DokuWikiTest {
         trigger_event('AJAX_CALL_UNKNOWN',$data);
         $response = ob_get_contents();
         ob_end_clean();
+        //
         var_dump($response); 
         $response = json_decode($response);
         var_dump($response);
