@@ -47,17 +47,22 @@ class plugin_tagfilter_ajax_test extends DokuWikiTest {
         $INPUT->set('flags',json_encode(array()));
         $INPUT->set('pagesearch',json_encode(array()));
     
+        
         ob_start();
         $data = 'plugin_tagfilter';
         trigger_event('AJAX_CALL_UNKNOWN',$data);
         
-        $response = ob_get_contents();
-        $response = json_decode($response);
-        $response = (array)$response;
-
-        $this->assertContains('id=test:plugin_tagfilter:tags:tagpage1', $response['text']);
-        $this->assertContains('id=test:plugin_tagfilter:tags:tagpage2', $response['text']);
-
+        $response1 = ob_get_contents();
+        $response2 = json_decode($response1);
+        $response = (array)$response2;
+        ob_end_clean();
+        if(!isset($response['text'])){
+            var_dump(array($response1,$response2,$response));
+        } else {
+        
+            $this->assertContains('id=test:plugin_tagfilter:tags:tagpage1', $response['text']);
+            $this->assertContains('id=test:plugin_tagfilter:tags:tagpage2', $response['text']);
+        }
     }
     
     public function test_ajax_request_onepage() {
