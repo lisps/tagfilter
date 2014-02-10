@@ -50,10 +50,13 @@ class plugin_tagfilter_ajax_test extends DokuWikiTest {
         ob_start();
         $data = 'plugin_tagfilter';
         trigger_event('AJAX_CALL_UNKNOWN',$data);
-        $response = (array)json_decode(ob_get_contents());
+        $response = ob_get_contents();
         ob_end_clean();
-        //echo var_dump($response);
-        
+        var_dump($response);
+        $response = json_decode($response);
+        var_dump($response);
+        $response = (array)$response;
+        var_dump($response);
         $this->assertContains('id=test:plugin_tagfilter:tags:tagpage1', $response['text']);
         $this->assertContains('id=test:plugin_tagfilter:tags:tagpage2', $response['text']);
 
