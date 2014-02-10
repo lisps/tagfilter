@@ -73,8 +73,9 @@ function tagfilter_submit(id,ns,flags)
 function tagfiltersent(id,form,ns,flags,pagesearch)
 {
 	jQuery.post(
-		DOKU_BASE+'lib/plugins/tagfilter/ajax.php',
+		DOKU_BASE+'lib/exe/ajax.php',
 		{
+			call:'plugin_tagfilter',
 			form:form,
 			id:id,
 			ns:JSON.stringify(ns),
