@@ -31,7 +31,7 @@ class action_plugin_tagfilter extends DokuWiki_Action_Plugin {
 
 		//filter for ft<key>_<label> and add it to JSINFO to select it via JavaScript
 		foreach($get_tagfilter as $param){
-			$ret = preg_match('/^tf(\d+)\_([\w\:äöü\-]+)/',$param,$matches);
+			$ret = preg_match('/^tf(\d+)\_([\w\:äöü\-\/#]+)/',$param,$matches);
 
 			if($ret && is_numeric($matches[1]) && $matches[2])
 				$JSINFO['tagfilter'][] = array(
@@ -119,7 +119,7 @@ class action_plugin_tagfilter extends DokuWiki_Action_Plugin {
 			}
 		}
 		
-		//dbg($page_names);
+
 		
 		//get the first item
 		if(!is_array($pages_intersect = array_shift($page_names))) {
@@ -141,9 +141,8 @@ class action_plugin_tagfilter extends DokuWiki_Action_Plugin {
 			$this->send_response('<i>'.$lang['nothingfound'].'</i>');
 			return;
 		}
-		
+
 		$pages_intersect = array_filter($pages_intersect,array($this,_filter_hide_template));
-		
 		
 		$pages = array();
 		foreach($pages_intersect as $page){
@@ -154,9 +153,9 @@ class action_plugin_tagfilter extends DokuWiki_Action_Plugin {
 			);
 		}
 		if(in_array('rsort',$flags)) {
-			krsort($pages);
+			krsort($pages,SORT_STRING|SORT_FLAG_CASE);
 		} else {
-			ksort($pages);
+			ksort($pages,SORT_STRING|SORT_FLAG_CASE);
 		}
 		
 		$pagetopics = array();
@@ -188,8 +187,12 @@ class action_plugin_tagfilter extends DokuWiki_Action_Plugin {
 		echo json_encode(array('id'=>$tagfilter_id,'text'=>$text));
 	}
 	
-	private function _filter_hide_template() {
-		return strpos($val,"_template")===false?true:false;
+	/**
+	 * filter function 
+	 * show only pages different to _template and the have to exist
+	 */
+	private function _filter_hide_template($val) {
+		return (strpos($val,"_template")===false) && (@file_exists(wikiFN($val))) ? true : false;
 	}
 
 

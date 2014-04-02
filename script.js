@@ -1,5 +1,5 @@
 /* DOKUWIKI:include_once script/chosen/chosen.jquery.js */
-
+/* DOKUWIKI:include_once script/jquery.history.js */
 /**
  * DokuWiki Plugin tagfilter (JavaScript Component) 
  *
@@ -11,7 +11,7 @@ function getSelectByFormId(id){
 	return jQuery('select.tagdd_select_'+id);
 }
 
-function tagfilter_cleanform(id){
+function tagfilter_cleanform(id,refresh){
 	//elements = getElementsByClass('tagdd_select',document.getElementById('tagdd_'+id),'select');
 	$elements = getSelectByFormId(id);
 	for(i=0;i<$elements.length;i++){
@@ -20,7 +20,7 @@ function tagfilter_cleanform(id){
 		}
 			
 	}
-    $elements[i-1].onchange();  
+    if(refresh) $elements[i-1].onchange();  
 	jQuery('select.tagdd_select').trigger("liszt:updated");	
 	
 }
@@ -102,57 +102,85 @@ jQuery().ready(function(){
 	var clean_r = [];
 	if(JSINFO['tagfilter']){
 		jQuery(JSINFO['tagfilter']).each(function(k,tf_elmt){
-			
-			
 			var $tf_dd = jQuery('#tagdd_'+tf_elmt.key +' [data-label="'+tf_elmt.label+'"]');
-			
-			
+
 			if($tf_dd){
 				if(jQuery.inArray(tf_elmt.key,clean_r) === -1){
-					tagfilter_cleanform(tf_elmt.key);
+					tagfilter_cleanform(tf_elmt.key,false);
 					clean_r.push(tf_elmt.key);
 				}
 				$tf_dd.val(tf_elmt.values);
 			}
 		});
+	} else if (History.getState().data.tagfilter) { //Fix for IE9
+		var params = History.getState().data.tagfilter;
+		jQuery(params).each(function(k,tf_elmt){
+			var $tf_dd = jQuery('#tagdd_'+tf_elmt.key +' [data-label="'+tf_elmt.label+'"]');
+			if($tf_dd){
+				if(jQuery.inArray(tf_elmt.key,clean_r) === -1){
+					tagfilter_cleanform(tf_elmt.key,false);
+					clean_r.push(tf_elmt.key);
+				}
+				//console.log($tf_dd.val());
+				if($tf_dd.val()){
+					var val_tmp = $tf_dd.val();
+					val_tmp.push(tf_elmt.value);
+					//console.log(val_tmp);
+					$tf_dd.val(val_tmp);
+				}
+				else 
+					$tf_dd.val(tf_elmt.value);
+			}
+		});
 	}
-});
+	
+	jQuery('form[data-plugin=tagfilter]').each(function(i,v){
+		jQuery(v).find('select')[0].onchange();
+	});
 
-/**
- * put the selected tags into the url for later use (browser history)
- * 
- */
-jQuery(window).on('beforeunload',function(e){
-	var $tagfilter_r = jQuery('form[data-plugin="tagfilter"]');
-	//tagfilter found?
-	if($tagfilter_r.length){
-		var tf_params = [];
-		$tagfilter_r.each(function(i,tagfilter){
-			var $tagfilter = jQuery(tagfilter);
-			//search for each dropdown field inside a tagfilter
-			$tagfilter.find('select').each(function(i,dd){
-				var $dd = jQuery(dd);
-				var value = $dd.val();
-				var type = jQuery.type(value);
-				if(!value)return;
+	//console.log(jQuery('fieldset'));
+	/**
+	 * put the selected tags into the url for later use (browser history)
+	 * 
+	 */
+	jQuery(window).on('beforeunload',function(e){
+		var $tagfilter_r = jQuery('form[data-plugin="tagfilter"]');
+		//tagfilter found?
+		if($tagfilter_r.length){
+			var tf_params = [];
+			var tf_object = [];
+			$tagfilter_r.each(function(i,tagfilter){
+				var $tagfilter = jQuery(tagfilter);
+				//search for each dropdown field inside a tagfilter
+				$tagfilter.find('select').each(function(i,dd){
+					var $dd = jQuery(dd);
+					var value = $dd.val();
+					var type = jQuery.type(value);
+					if(!value)return;
+					
+					//add selected fields to tf_params
+					if(type === 'string') {
+						tf_params.push(encodeURIComponent('tf' + $tagfilter.attr('data-idx')+'_'+$dd.attr('data-label'))+'[]='+encodeURIComponent(value));
+						tf_object.push({'key':$tagfilter.attr('data-idx'),'label':$dd.attr('data-label'),'value':value});
+					}
+					if(type === 'array') {
+						jQuery(value).each(function(i,v){
+							tf_params.push(encodeURIComponent('tf' + $tagfilter.attr('data-idx')+'_'+$dd.attr('data-label'))+'[]='+encodeURIComponent(v));
+							tf_object.push({'key':$tagfilter.attr('data-idx'),'label':$dd.attr('data-label'),'value':v});
+						});
+					}
+				});
 				
-				//add selected fields to tf_params
-				if(type === 'string') {
-					tf_params.push(encodeURIComponent('tf' + $tagfilter.attr('data-idx')+'_'+$dd.attr('data-label'))+'[]='+encodeURIComponent(value));
-				}
-				if(type === 'array') {
-					jQuery(value).each(function(i,v){
-						tf_params.push(encodeURIComponent('tf' + $tagfilter.attr('data-idx')+'_'+$dd.attr('data-label'))+'[]='+encodeURIComponent(v));
-					});
-				}
 			});
 			
-		});
-		//something selected?
-		//if(tf_params.length){
-			var url = document.location.href.split('?');
+			var state = History.getState();
 
-			var url_params = url[1].split('&');
+			var url = state.url.split('?');
+			if(url[1])
+				var url_params = url[1].split('&');
+			else 
+				var url_params = [];
+				
 			var old_params = [];
 			jQuery(url_params).each(function(k,v){
 				if(tagfilter_strpos(v,'tf',0) !== 0) //hack but should almost work ;)
@@ -160,14 +188,14 @@ jQuery(window).on('beforeunload',function(e){
 			});
 			
 			old_params = old_params.concat(tf_params);
-			window.history.replaceState({},'tagfilter',url[0]+'?'+old_params.join('&'));
-		//}
-		//return true;
-		//window.history.replaceState();
-	} else {
-	}
-});
+			//console.log(old_params.join('&'));
+			//console.log(History.getState())
 
+			History.replaceState({'tagfilter':tf_object},'tagfilter',url[0] + '?' + old_params.join('&'));
+		}
+	});
+	
+});
 /**
  * copied from http://phpjs.org/functions/strpos/ 
  */

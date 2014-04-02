@@ -48,7 +48,7 @@ class syntax_plugin_tagfilter extends DokuWiki_Syntax_Plugin {
     /*
      * Paragraph Type
      */
-    function getPType(){return 'normal';}
+    function getPType(){return 'block';}
 
     /*
      * Connect pattern to lexer
@@ -112,6 +112,7 @@ class syntax_plugin_tagfilter extends DokuWiki_Syntax_Plugin {
 			p_set_metadata($ID, array('date'=>array('valid'=>array('age'=>0)))); 
 			$renderer->info['cache'] = false;
 		}
+		/* @var $Htagfilter helper_plugin_tagfilter */
 		$Htagfilter = $this->loadHelper('tagfilter');
 		if($mode === 'metadata') return false;
 		if($mode === 'xhtml') {
@@ -211,7 +212,7 @@ class syntax_plugin_tagfilter extends DokuWiki_Syntax_Plugin {
 								return [
 									('.$jsVar.'[value]["link"] == false) ? "":
 										"<span style=\'float:right;height:100%;vertical-align:center;padding-top:3px;\'>"+
-											"<img height='.($flags['multi']?'32px':'32px').' src=\'"+'.$jsVar.'[value]["link"]+"\'>"+
+											"<img style=\'height:'.($flags['multi']?'32px':'32px').'\' src=\'"+'.$jsVar.'[value]["link"]+"\'>"+
 										"</span>",
 										"<span>"+text+"</span>",
 									('.$jsVar.'[value]["link"] == false) ? "":"<div style=\'clear:both;\'></div>"
@@ -222,7 +223,7 @@ class syntax_plugin_tagfilter extends DokuWiki_Syntax_Plugin {
 									return [
 										('.$jsVar.'[value]["link"] == false) ? "":
 											"<span style=\'float:right;height:100%;vertical-align:center;padding-top:3px;\'>"+
-												"<img height='.($flags['multi']?'32px':'16px').' src=\'"+'.$jsVar.'[value]["link"]+"\'></span>",
+												"<img style=\'height:'.($flags['multi']?'32px':'16px').'\' src=\'"+'.$jsVar.'[value]["link"]+"\'></span>",
 											"<span>"+text+"</span>",
 										('.$jsVar.'[value]["link"] == false) ? "":"<div style=\'clear:both;\'></div>"
 									].join("");
@@ -233,14 +234,14 @@ class syntax_plugin_tagfilter extends DokuWiki_Syntax_Plugin {
 				}			
 				$form->addElement(form_makeListboxField($label, $tags, $selectedTags , $label, $id, 'tagfilter', $options));
 			}
-			$form->addElement(form_makeButton('button','', $this->getLang('Delete filter'), array('onclick'=>'tagfilter_cleanform('.$opt['id'].')')));
+			$form->addElement(form_makeButton('button','', $this->getLang('Delete filter'), array('onclick'=>'tagfilter_cleanform('.$opt['id'].',true)')));
 			$form->endFieldset();
 			$renderer->doc .= $form->getForm();//Form Ausgeben
 			//Ergebnisfeld Ausgeben mit ScriptCode zum Verzögerten Laden des ersten Inhalts
 			$renderer->doc.= "
 <div id='tagfilter_ergebnis_".$opt['id']."' class='tagfilter'>
 <script type='text/javascript'>jQuery(document).ready(function(){
-	setTimeout(\"getSelectByFormId('".$opt['id']."')[0].onchange()\",2000*(".$opt['id']."));
+	//setTimeout(\"getSelectByFormId('".$opt['id']."')[0].onchange()\",2000*(".$opt['id']."));
 	".$jquery."});
 </script>
 </div>";

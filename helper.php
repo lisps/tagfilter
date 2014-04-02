@@ -131,11 +131,14 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 		$Htag  =$this->Htag;
 		if(!$Htag)return false;
 		foreach($page_r as $page){
+			if(noNS($page) ==='_template') return false;
 			if ($ns && (strpos(':'.getNS($page).':', ':'.$ns.':') === 0)){
 				if (!$acl_safe) return true;
 				$perm = auth_quickaclcheck($page);
-				if (!$perm < AUTH_READ)
+				if (!$perm < AUTH_READ) {
+					if(!page_exists($page)) $Htag->_updateTagIndex($page,array());
 					return true;
+				}
 
 			}
 			//if($Htag->_isVisible($page,$ns))
