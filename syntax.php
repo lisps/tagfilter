@@ -126,7 +126,7 @@ class syntax_plugin_tagfilter extends DokuWiki_Syntax_Plugin {
 			));
 			$renderer->cdata("\n");
 			//Fieldset manuell hinzufügen da ein style Parameter übergeben werden soll
-			$form->addElement(array('_elem'=>'openfieldset', '_legend'=>'Tagfilter','style'=>'text-align:left;width:100%','id'=>'__tagfilter_'.$opt['id']));
+			$form->addElement(array('_elem'=>'openfieldset', '_legend'=>'Tagfilter','style'=>'text-align:left;width:99%','id'=>'__tagfilter_'.$opt['id']));
 			$form->_infieldset=true; //Fieldset starten
 			
 			$tagselect_r = array();
@@ -149,8 +149,8 @@ class syntax_plugin_tagfilter extends DokuWiki_Syntax_Plugin {
 				$tags = $Htagfilter->getAllPages($opt['ns'],$tags);
 				$selectedTags = array();
 				$id = '__tagfilter_page_'.$opt['id'];
-				$jquery .= 'jQuery("#'.$id.'").chosen({
-								allow_single_deselect: true,});';
+				//$jquery .= 'jQuery("#'.$id.'").chosen({
+				//				allow_single_deselect: true,});';
 				$options = array(//generelle Optionen für DropDownListe onchange->submit von id namespace und den flags für pagelist
 					'onChange'=>'tagfilter_submit('.$opt['id'].','.json_encode($opt['ns']).','.json_encode($opt['flags']).')',
 					'class'=>'tagdd_select tagfilter tagdd_select_'.$opt['id'],
@@ -199,38 +199,16 @@ class syntax_plugin_tagfilter extends DokuWiki_Syntax_Plugin {
 						);
 					}
 					$jsVar = 'tagfilter_jsVar_'.rand();
-					$renderer->doc .= '<script type="text/javascript">/*<![CDATA[*/ var '.$jsVar.' ='
+					$renderer->doc .= '<script type="text/javascript">/*<![CDATA[*/ tagfilter_container.'.$jsVar.' ='
 										.json_encode($links).
 										'; /*!]]>*/</script>'."\n";
 
 					$id='__tagfilter_'.$opt["id"].'_'.rand();
-					$jquery .= 'jQuery("#'.$id.'").chosen({
-								allow_single_deselect: true,';
+
 					if($flags['tagimage']){
-						$jquery .=  'template: function (text,value, templateData) {
-							if(!(value in '.$jsVar.')) {return "";}
-								return [
-									('.$jsVar.'[value]["link"] == false) ? "":
-										"<span style=\'float:right;height:100%;vertical-align:center;padding-top:3px;\'>"+
-											"<img style=\'height:'.($flags['multi']?'32px':'32px').'\' src=\'"+'.$jsVar.'[value]["link"]+"\'>"+
-										"</span>",
-										"<span>"+text+"</span>",
-									('.$jsVar.'[value]["link"] == false) ? "":"<div style=\'clear:both;\'></div>"
-								].join("");
-							},
-							templateSelected: function (text,value, templateData) {
-								if(!(value in '.$jsVar.')) {return "";}
-									return [
-										('.$jsVar.'[value]["link"] == false) ? "":
-											"<span style=\'float:right;height:100%;vertical-align:center;padding-top:3px;\'>"+
-												"<img style=\'height:'.($flags['multi']?'32px':'16px').'\' src=\'"+'.$jsVar.'[value]["link"]+"\'></span>",
-											"<span>"+text+"</span>",
-										('.$jsVar.'[value]["link"] == false) ? "":"<div style=\'clear:both;\'></div>"
-									].join("");
-						
-							},';
+					    $options['data-tagimage'] = $jsVar;
 					}
-					$jquery .= '});' ."\n";
+
 				}			
 				$form->addElement(form_makeListboxField($label, $tags, $selectedTags , $label, $id, 'tagfilter', $options));
 			}
@@ -240,10 +218,7 @@ class syntax_plugin_tagfilter extends DokuWiki_Syntax_Plugin {
 			//Ergebnisfeld Ausgeben mit ScriptCode zum Verzögerten Laden des ersten Inhalts
 			$renderer->doc.= "
 <div id='tagfilter_ergebnis_".$opt['id']."' class='tagfilter'>
-<script type='text/javascript'>jQuery(document).ready(function(){
-	//setTimeout(\"getSelectByFormId('".$opt['id']."')[0].onchange()\",2000*(".$opt['id']."));
-	".$jquery."});
-</script>
+
 </div>";
 			
 		}	

@@ -1,4 +1,5 @@
-/* DOKUWIKI:include_once script/chosen/chosen.jquery.js */
+/* DOKUWIKI:include_once script/select2/select2.js */
+/* DOKUWIKI:include_once script/select2/select2_locale_de.js */
 /* DOKUWIKI:include_once script/jquery.history.js */
 /**
  * DokuWiki Plugin tagfilter (JavaScript Component) 
@@ -6,7 +7,7 @@
  * @license GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author  lisps
  */
-
+var tagfilter_container = {};
 function getSelectByFormId(id){
 	return jQuery('select.tagdd_select_'+id);
 }
@@ -14,14 +15,10 @@ function getSelectByFormId(id){
 function tagfilter_cleanform(id,refresh){
 	//elements = getElementsByClass('tagdd_select',document.getElementById('tagdd_'+id),'select');
 	$elements = getSelectByFormId(id);
-	for(i=0;i<$elements.length;i++){
-		for(k=0;k<$elements[i].options.length;k++){
-			$elements[i].options[k].selected=false;	
-		}
-			
-	}
-    if(refresh) $elements[i-1].onchange();  
-	jQuery('select.tagdd_select').trigger("liszt:updated");	
+	$elements.select2('val','');
+
+	if(refresh) $elements[0].onchange();
+
 	
 }
 
@@ -137,6 +134,16 @@ jQuery().ready(function(){
 	jQuery('form[data-plugin=tagfilter]').each(function(i,v){
 		jQuery(v).find('select')[0].onchange();
 	});
+	
+	jQuery('form[data-plugin=tagfilter]').each(function(i,v){
+		jQuery(v).find('select').select2({
+			width:'200',
+			allowClear: true,
+			dropdownAutoWidth:true,
+			formatResult:tagfilter_selectFormatSelection,
+			formatSelection:tagfilter_selectFormatSelection
+		});
+	});
 
 	//console.log(jQuery('fieldset'));
 	/**
@@ -210,4 +217,42 @@ function tagfilter_strpos (haystack, needle, offset) {
   var i = (haystack + '').indexOf(needle, (offset || 0));
   return i === -1 ? false : i;
 }
+
+function tagfilter_selectFormatResult(val) {
+	console.log('tagfilter_selectFormatResult',val);
+	return (val.text); 
+	/*
+	if(!(value in '.$jsVar.')) {return "";}
+	return [
+		('.$jsVar.'[value]["link"] == false) ? "":
+			"<span style=\'float:right;height:100%;vertical-align:center;padding-top:3px;\'>"+
+				"<img style=\'height:'.($flags['multi']?'32px':'32px').'\' src=\'"+'.$jsVar.'[value]["link"]+"\'>"+
+			"</span>",
+			"<span>"+text+"</span>",
+		('.$jsVar.'[value]["link"] == false) ? "":"<div style=\'clear:both;\'></div>"
+	].join("");
+	}*/
+}
+function tagfilter_selectFormatSelection(val) {
+	console.log('tagfilter_selectFormatSelection',val);
+	var $select = jQuery(val.element).parent();
+	var tagimage = $select.data('tagimage');
+	var tagtext = "<span>"+val.text+"</span>";
+	
+	if(!tagimage) return tagtext;
+	var tagimage_link = tagfilter_container[tagimage][val.id]['link'];
+	if(tagimage && tagimage_link) {
+		return [
+			"<span style=\'float:right;height:100%;vertical-align:center;padding-top:3px;\'>"+
+				"<img style='height:32px' src='"+tagimage_link+"'></span>",
+			"<span>"+val.text+"</span>",
+			"<div style=\'clear:both;\'></div>"
+			].join("");
+	} else {
+		return tagtext; 
+	}
+	
+}
+
+
  
