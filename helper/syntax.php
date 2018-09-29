@@ -18,6 +18,7 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
         //extract all pageids
         $pageids = array();
         foreach($tagselect_r['tagPages'] as $select_r){
+            if(!is_array($select_r)) continue;
             foreach($select_r as $tag => $pageid_r){
                 if(!empty($flags['withTags']) && !in_array($tag,$flags['withTags'])) continue;
                 if(!empty($flags['excludeTags']) && in_array($tag,$flags['excludeTags'])) continue;

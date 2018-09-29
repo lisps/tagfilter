@@ -156,7 +156,7 @@ class action_plugin_tagfilter extends DokuWiki_Action_Plugin {
 					'id' => $page
 			);
 		}
-		if(in_array('rsort',$flags)) {
+		if(is_array($flags) && in_array('rsort',$flags)) {
 			krsort($pages,SORT_STRING|SORT_FLAG_CASE);
 		} else {
 			ksort($pages,SORT_STRING|SORT_FLAG_CASE);
