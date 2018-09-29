@@ -175,7 +175,7 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin {
 				
 				//check tags for visibility
 				foreach($tagselect_r['tagPages'] as &$select_r) {
-				    if(!is_array($select_r)) continue;
+				    $select_r = array();
 					foreach($select_r as $tag=>$pageid_r) {
 						if(count(array_intersect(($pageid_r), $pageids)) == 0) {
 							unset($select_r[$tag]);
@@ -245,6 +245,7 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin {
 					
 					//get tag labels
 					$tags = array();
+					
 					foreach(array_keys($tagselect_r['tagPages'][$key]) as $tagid) {
 						$tags[$tagid] = $Htagfilter->getTagLabel($tagid);
 					}
