@@ -213,7 +213,7 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin {
 					foreach($pageids as $pageid) {
 						$pagetitle_r[$pageid] = $Htagfilter->getPageTitle($pageid);
 					}
-					asort($pagetitle_r);
+					asort($pagetitle_r, SORT_NATURAL|SORT_FLAG_CASE);
 	
 					$selectedTags = array();
 					$id = '__tagfilter_page_'.$opt['id'];

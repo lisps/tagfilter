@@ -72,7 +72,7 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
                 $cache_page = array(
                     'title' => $title?$title:$page,
                     'id' => $page,
-                    'tmp_id' => title?$title:noNS($page),
+                    'tmp_id' => title?$title:noNS($page)?noNS($page):$page,
                 );
     
                 foreach($flags['tagcolumn'] as $tagcolumn){
@@ -96,9 +96,9 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
     
     
         if($flags['rsort']) {
-            krsort($pages,SORT_STRING|SORT_FLAG_CASE);
+            krsort($pages,SORT_NATURAL|SORT_FLAG_CASE);
         } else {
-            ksort($pages,SORT_STRING|SORT_FLAG_CASE);
+            ksort($pages,SORT_NATURAL|SORT_FLAG_CASE);
         }
         return $pages;
     }
