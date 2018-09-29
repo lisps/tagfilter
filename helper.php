@@ -23,7 +23,7 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 	/**
 	* Constructor gets default preferences and language strings
 	*/
-	function helper_plugin_tagfilter() {
+	function __construct() {
 		if (plugin_isdisabled('tag') || (!$this->Htag = plugin_load('helper', 'tag'))) {
 			msg('tag plugin is missing', -1);
 			return false;
