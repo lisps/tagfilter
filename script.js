@@ -14,7 +14,7 @@ function getSelectByFormId(id){
 
 function tagfilter_cleanform(id,refresh){
 	//elements = getElementsByClass('tagdd_select',document.getElementById('tagdd_'+id),'select');
-	$elements = getSelectByFormId(id);
+	var $elements = getSelectByFormId(id);
 	$elements.select2('val','');
 
 	if(refresh) $elements[0].onchange();
@@ -24,18 +24,27 @@ function tagfilter_cleanform(id,refresh){
 
 function tagfilter_submit(id,ns,flags)
 {
-	form = new Array();
-	pagesearch= new Array();
-	$elements = getSelectByFormId(id);
+	var form = new Array();
+	var pagesearch= new Array();
+	var $elements = getSelectByFormId(id);
+
 	
-	//document.getElementById('tagfilter_ergebnis_'+id).innerHTML = '';
-	document.getElementById('tagfilter_ergebnis_'+id).className += " loading";
+	var tags = jQuery('#tagdd_'+id).data('tags');
+
+	jQuery.each(tags,function(index,select_r) {
+		jQuery.each(select_r,function(index2,page_r){
+			tags[index][index2] = jQuery.map(page_r,function(value){
+				return [value];
+			});
+		});
+	});
+	
 	count = 0;
-	for(i=0;i<$elements.length;i++){
+	for(var i=0;i<$elements.length;i++){
 		e = $elements[i];
-		if(e.selectedIndex != -1)
+		//if(e.selectedIndex != -1)
 			form[i] = new Array();
-		for(k=0;k<e.options.length;k++){
+		for(var k=0;k<e.options.length;k++){
 			if(e.options[k].selected && e.options[k].value != ''){
 				if(e.id == '__tagfilter_page_'+id) {
 					pagesearch.push(e.options[k].value);	
@@ -48,52 +57,78 @@ function tagfilter_submit(id,ns,flags)
 		}
 	}
 	
-	if(count == 0){
-		form[0] = new Array();
-		for(i=0;i<$elements.length;i++){
-			e = $elements[i];
-			if(e.id == '__tagfilter_page_'+id) continue; //do not sent the pagenames
-			for(k=0;k<e.options.length;k++){
-				form[0].push(e.options[k].value);
-			}
-		}
+	if(flags[1]['pagesearch'] == true) { //delete pagesearch element
+		form.shift();
 	}
 	
+	var pages = new Array();
+	var page_idx = 0;
+	
+	jQuery.each(form,function(index,select) { //loop through select boxes and collect the pages
+		if(jQuery.isArray(select) && select.length) {	
+			pages[page_idx] = new Array();
+			jQuery.each(select,function(index2,tag) {
+				pages[page_idx] = jQuery.merge(pages[page_idx],tags[index][tag]);
+			});
+			pages[page_idx] = jQuery.unique(pages[page_idx]);
+			page_idx++;
+		} 
+	});
+	
+	if(pagesearch.length == 0 && page_idx == 0) { //nothings selected => show all
+		jQuery('#tagfilter_ergebnis_'+id+' .pagelist tr').each(function (){
+			if(flags[1]['noneonclear']) {
+				var $tr = jQuery(this);
+		        var $link = $tr.find('td.page a');
+				if($link.length == 0) {
+		        	$tr.show();
+		        	return;
+		        }
+				$tr.hide();
+			} else {
+				jQuery(this).show();
+			}
+			
+		});
+		return;
+	}
+	
+	var pages_filtered = new Array();
+	pages_filtered = pages.shift();
+	jQuery.each(pages,function(index,page_r) { //intersect pages
+		pages_filtered = jQuery(pages_filtered).filter(page_r);
+	});
+	
+	if(page_idx == 0 && pagesearch.length != 0) { 
+		pages_filtered = pagesearch;
+	} else if (pagesearch.length != 0) { //intersect pagesearch
+		pages_filtered = jQuery(pages_filtered).filter(pagesearch);
+	}
+	
+	jQuery('#tagfilter_ergebnis_'+id).addClass('loading');
 	
 	
-	tagfiltersent(id,JSON.stringify(form),ns,flags,pagesearch);
-
-}
-
-
-//send ajax data    
-function tagfiltersent(id,form,ns,flags,pagesearch)
-{
-	jQuery.post(
-		DOKU_BASE+'lib/exe/ajax.php',
-		{
-			call:'plugin_tagfilter',
-			form:form,
-			id:id,
-			ns:JSON.stringify(ns),
-			flags:JSON.stringify(flags),
-			pagesearch:JSON.stringify(pagesearch)
-		},
-		tagfilterdone	
-	);
-}
-
+	//loop all found searchentries
+    jQuery('#tagfilter_ergebnis_'+id+' .pagelist tr').each(function (e){
+        var $tr = jQuery(this);
+        var $link = $tr.find('td.page a');
+        if($link.length == 0) {
+        	$tr.show();
+        	return;
+        }
+        var id = $link.attr('title');
+        
+        if(jQuery.inArray(id,pages_filtered) == -1) {
+        	$tr.hide();
+        } else {
+        	$tr.show();
+        }
+    });
     
-function tagfilterdone(data,textStatus,jqXHR)
-{
-    if(data) {
-		ret = JSON.parse(data);
-		div = document.getElementById("tagfilter_ergebnis_"+ret.id);	
-		div.innerHTML = ret.text;
-		document.getElementById('tagfilter_ergebnis_'+ret.id).className = " tagfilter";
-		return true;
-    }
+    jQuery('#tagfilter_ergebnis_'+id).removeClass('loading');
+    
 }
+
 
 jQuery().ready(function(){
 	var clean_r = [];
@@ -111,6 +146,7 @@ jQuery().ready(function(){
 		});
 	} else if (History.getState().data.tagfilter) { //Fix for IE9
 		var params = History.getState().data.tagfilter;
+		
 		jQuery(params).each(function(k,tf_elmt){
 			var $tf_dd = jQuery('#tagdd_'+tf_elmt.key +' [data-label="'+tf_elmt.label+'"]');
 			if($tf_dd){
@@ -118,11 +154,11 @@ jQuery().ready(function(){
 					tagfilter_cleanform(tf_elmt.key,false);
 					clean_r.push(tf_elmt.key);
 				}
-				//console.log($tf_dd.val());
+
 				if($tf_dd.val()){
 					var val_tmp = $tf_dd.val();
+					if(!jQuery.isArray(val_tmp)) val_tmp = new Array(val_tmp);
 					val_tmp.push(tf_elmt.value);
-					//console.log(val_tmp);
 					$tf_dd.val(val_tmp);
 				}
 				else 
@@ -136,7 +172,7 @@ jQuery().ready(function(){
 	});
 	
 	jQuery('form[data-plugin=tagfilter]').each(function(i,v){
-		jQuery(v).find('select').select2({
+		jQuery(v).find('select.chosen').select2({
 			width:'200',
 			allowClear: true,
 			dropdownAutoWidth:true,
@@ -219,7 +255,7 @@ function tagfilter_strpos (haystack, needle, offset) {
 }
 
 function tagfilter_selectFormatResult(val) {
-	console.log('tagfilter_selectFormatResult',val);
+	//console.log('tagfilter_selectFormatResult',val);
 	return (val.text); 
 	/*
 	if(!(value in '.$jsVar.')) {return "";}
@@ -234,7 +270,7 @@ function tagfilter_selectFormatResult(val) {
 	}*/
 }
 function tagfilter_selectFormatSelection(val) {
-	console.log('tagfilter_selectFormatSelection',val);
+	//console.log('tagfilter_selectFormatSelection',val);
 	var $select = jQuery(val.element).parent();
 	var tagimage = $select.data('tagimage');
 	var tagtext = "<span>"+val.text+"</span>";
@@ -254,5 +290,23 @@ function tagfilter_selectFormatSelection(val) {
 	
 }
 
-
+jQuery(function(){
+	jQuery('div.plugin_tagcompare form[data-plugin=tagcompare]').each(function(i,v){
+		jQuery(v).find('select').select2({
+			width:'200',
+			allowClear: true,
+			dropdownAutoWidth:true,
+			placeholder: "",
+			
+		}).on('change', function(){
+			this.form.submit();
+//			$form = jQuery(this.form);
+//			
+//			jQuery.ajay({
+//				//url:$form.attr('')
+//				data:
+//			});
+		});
+	});
+});
  

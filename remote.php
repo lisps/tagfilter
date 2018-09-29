@@ -40,7 +40,7 @@ class remote_plugin_tagfilter extends DokuWiki_Remote_Plugin {
             $pages_r[] = array(
                 'title' => $title?$title:$page,
                 'id' => $page,
-                //'tags' => $Htagfilter->getTagsBySiteID($page)
+                'tags' => $Htagfilter->getTagsBySiteID($page)
                 );
         }
         
@@ -68,7 +68,7 @@ class remote_plugin_tagfilter extends DokuWiki_Remote_Plugin {
             $pages_r[] = array(
                 'title' => $title?$title:$page,
                 'id' => $page,
-                //'tags' => $Htagfilter->getTagsBySiteID($page)
+                'tags' => $Htagfilter->getTagsBySiteID($page)
                 );
         }
         

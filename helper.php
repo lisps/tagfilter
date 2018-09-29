@@ -15,7 +15,10 @@ if (!defined('DOKU_TAB')) define('DOKU_TAB', "\t");
 require_once(DOKU_INC.'inc/indexer.php');
 
 class helper_plugin_tagfilter extends DokuWiki_Plugin {
-	
+	/**
+	 * 
+	 * @var helper_plugin_tag
+	 */
 	protected $Htag;
 	/**
 	* Constructor gets default preferences and language strings
@@ -55,6 +58,7 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 		return $result;
 	}
 	function isNewTagVersion(){
+
 		$Htag  =$this->Htag;
 		if(!$Htag)return false;
 		$info =$Htag->getInfo();
@@ -75,10 +79,8 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 		$alltags = $this->getTagsByNamespace($ns,false);
 		foreach($tags  as  $tag){
 			foreach($alltags as $alltag){
-				if(@preg_match('/^'.$tag.'$/',$alltag)){
-					$label =strrchr($alltag,':');
-					$label = $label !=''?$label:$alltag;
-					$fullTags[$alltag] = ucwords(str_replace('_',' ',trim($label,':')));
+				if($this->preg_matchTag($tag, $alltag)){
+					$fullTags[$alltag] = $this->getTagLabel($alltag);
 				}
 			}
 		}
@@ -87,6 +89,17 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 		
 		return  $fullTags;
 	}
+	
+	
+	public function preg_matchTag($pregmatch,$tag) {
+		return @preg_match('/^'.$pregmatch.'$/i',$tag);
+	}
+	public function getTagLabel($tag) {
+		$label = strrchr($tag,':');
+		$label = $label !=''?$label:$tag;
+		return mb_convert_case(str_replace('_',' ',trim($label,':')), MB_CASE_TITLE, "UTF-8");
+	}
+
 	
 	protected $_tagsByNamespace = array();
 	function getTagsByNamespace($ns = '',$acl_safe = true){
@@ -148,6 +161,16 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 		return false;
 	}
 	
+	function canRead($pageid) {
+		$Htag  =$this->Htag;
+		$perm = auth_quickaclcheck($pageid);
+		if (!($perm < AUTH_READ)) {
+			if(!page_exists($pageid)) $Htag->_updateTagIndex($pageid,array());
+			return true;
+		}
+		return false;
+	}
+	
 	function _checkPageArrayInNamespace_New($page_r,$ns,$acl_safe = true){
 		$Htag  =$this->Htag;
 		if(!$Htag)return false;
@@ -165,7 +188,7 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 	}
 	
 	/*
-	 * liefert alle Tags für eine bestimmte seite Zurück
+	 * liefert alle Tags fï¿½r eine bestimmte seite Zurï¿½ck
 	 */
 	function getTagsBySiteID($siteID){
 		if($this->isNewTagVersion())
@@ -318,6 +341,42 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 		return false;
 	}
 	
+	function getTagImageColumn($id,$col,$ns){
+		if(!isset($this->_pageTags[$id])) {
+			$this->_pageTags[$id] = $this->getTagsBySiteID($id);
+		}
+		$foundTags = array();
+		foreach($this->_pageTags[$id] as $tag) {
+			if($this->preg_matchTag($col, $tag)) {
+				$foundTags[] = hsc($this->getTagLabel($tag));
+			}
+		}
+		$images = array();
+		foreach($foundTags as $foundTag) {
+			$imageid = $ns.':'.substr($foundTag,strrpos($foundTag,':'));
+
+			$src = $imageid .'.jpg';
+			if(!@file_exists(mediaFN($src))) {
+				$src = $imageid .'.png';
+				if(!@file_exists(mediaFN($src))) {
+					$src = $imageid .'.jpeg';
+					if(!@file_exists(mediaFN($src))) {
+						$src = $imageid .'.gif';
+						if(!@file_exists(mediaFN($src))) {
+							$src = false;
+						}
+					}
+				}
+			}
+			if($src != false) {
+				$images[] = '<img src="'.ml($src).' " class="media" style="height:max-width:200px;"/>';
+			}
+		}
+
+		return implode("<br>",$images);
+
+	}
+	
 	/*
 	 * return all pages defined by tag_list_r in a specific namespace
 	 * 
@@ -343,6 +402,12 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 		return $pages;
 	}
 	
+	function getPageTitle($pageid) {
+		$title = p_get_metadata($pageid, 'title', METADATA_DONT_RENDER);
+		$title = $title?$title:$pageid;
+		return strip_tags($title);  
+	}
+	
 	/*
 	 * gets the pages defined by tag_list
 	 *
@@ -365,6 +430,75 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 			}
 		}
 		return $page_names;		
+	}
+	function getTagCategory($tag){
+		$label = strstr($tag,':',true);
+		$label = $label !=''?$label:$tag;
+		return ucwords(str_replace('_',' ',trim($label,':')));
+	}
+	function th($tag) {
+		if(strpos($tag,'*'))
+			return $this->getTagCategory($tag);
+		else 
+			return $this->getTagLabel($tag);
+	}
+	
+	public $_pageTags = array();
+	function td($id,$col){
+		if(!isset($this->_pageTags[$id])) {
+			$this->_pageTags[$id] = $this->getTagsBySiteID($id);
+		}
+		$foundTags = array();
+		foreach($this->_pageTags[$id] as $tag) {
+			if($this->preg_matchTag($col, $tag)) {
+				$foundTags[] = hsc($this->getTagLabel($tag));
+			}	
+		}
+		return implode("<br>",$foundTags);
+	}
+	
+	
+	
+	/**
+	 * 
+	 * 
+	 * @param string $tags
+	 * @param string $ns
+	 * @return array [tag]=>[]pages
+	 */
+	function getRelationsByTagRegExp($tags, $ns = ''){
+		$relations = array();
+		
+		$Htag  =$this->Htag;
+		if(!$Htag)return false;
+
+		if($this->isNewTagVersion())
+			return false; // not supported yet
+		
+		$tags = $Htag->_parseTagList($tags, true); //array
+		
+		$matchedTags = array();
+		$indexTags = array_keys($Htag->topic_idx);
+		foreach($indexTags as $tag) {
+			foreach($tags as $tagExpr) {
+				if($this->preg_matchTag($tagExpr, $tag))
+					$matchedTags[] = $tag;
+			}
+		}
+		$matchedTags = array_unique($matchedTags);
+		
+		foreach($matchedTags as $tag) {
+			$relations[$tag] = array_filter($Htag->topic_idx[$tag],function($pageid) use ($ns) {
+				if ($ns === '' ||  (strpos(':'.getNS($pageid).':', ':'.$ns.':') === 0)) return true;
+			});
+		}
+		
+		
+		
+		$relations = array_filter($relations); //clean empty tags
+		ksort($relations); //sort
+		
+		return $relations;
 	}
 }
 

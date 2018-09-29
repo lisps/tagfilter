@@ -76,7 +76,11 @@ class action_plugin_tagfilter extends DokuWiki_Action_Plugin {
 		$tagfilter_id = $INPUT->int('id');
 		$form = $this->dejson_param('form');
 		$ns = $this->dejson_param('ns');
-		$flags = $this->dejson_param('flags');
+		$flags = (array)$this->dejson_param('flags');
+		//print_r($flags);
+		$tfFlags = (array)$flags[1];
+		$flags = $flags[0];
+		//print_r($tfFlags);
 		$pagesearch = $this->dejson_param('pagesearch');
 		
 		//load tagfilter plugin
@@ -159,6 +163,11 @@ class action_plugin_tagfilter extends DokuWiki_Action_Plugin {
 		}
 		
 		$pagetopics = array();
+		//print_r($tfFlags['tagcolumn']);
+		if(!isset($tfFlags['tagcolumn']))$tfFlags['tagcolumn'] = array();
+		foreach($tfFlags['tagcolumn'] as $tagcolumn) {
+			$Hpagelist->addColumn('tagfilter',hsc($tagcolumn));
+		}
 		$Hpagelist->setFlags($flags);
 		$Hpagelist->startList();
 		
