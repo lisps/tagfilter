@@ -146,7 +146,7 @@ class action_plugin_tagfilter extends DokuWiki_Action_Plugin {
 			return;
 		}
 
-		$pages_intersect = array_filter($pages_intersect,array($this,_filter_hide_template));
+		$pages_intersect = array_filter($pages_intersect,array($this, '_filter_hide_template'));
 		
 		$pages = array();
 		foreach($pages_intersect as $page){
