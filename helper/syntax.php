@@ -162,6 +162,7 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
             'withTags' => array(),
             'excludeTags' => array(),
             'images' => false,
+            'count' => false,
         );
     
         foreach($flags as $k=>$flag) {
@@ -216,6 +217,9 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
                     break;
                 case 'images':
                     $conf['images'] = true;
+                    break;
+                case 'count':
+                    $conf['count'] = true;
                     break;
             }
         }

@@ -90,45 +90,43 @@ function tagfilter_submit(id,ns,flags)
 			}
 			
 		});
-		return;
-	}
-	
-	var pages_filtered = new Array();
-	pages_filtered = pages.shift();
-	jQuery.each(pages,function(index,page_r) { //intersect pages
-		pages_filtered = jQuery(pages_filtered).filter(page_r);
-	});
-	
-	if(page_idx == 0 && pagesearch.length != 0) { 
-		pages_filtered = pagesearch;
-	} else if (pagesearch.length != 0) { //intersect pagesearch
-		pages_filtered = jQuery(pages_filtered).filter(pagesearch);
-	}
-	
-	jQuery('#tagfilter_ergebnis_'+id).addClass('loading');
-	
-	
-	//loop all found searchentries
-    jQuery('#tagfilter_ergebnis_'+id+' .pagelist tr').each(function (e){
-        var $tr = jQuery(this);
-        var $link = $tr.find('td.page a');
-        if($link.length == 0) {
-        	$tr.show();
-        	return;
-        }
-        var id = $link.attr('title');
-        
-        if(jQuery.inArray(id,pages_filtered) == -1) {
-        	$tr.hide();
-        } else {
-        	$tr.show();
-        }
-    });
-    
-    jQuery('#tagfilter_ergebnis_'+id).removeClass('loading');
-    
-}
 
+
+	} else {
+	
+		var pages_filtered = new Array();
+		pages_filtered = pages.shift();
+		jQuery.each(pages,function(index,page_r) { //intersect pages
+			pages_filtered = jQuery(pages_filtered).filter(page_r);
+		});
+		
+		if(page_idx == 0 && pagesearch.length != 0) { 
+			pages_filtered = pagesearch;
+		} else if (pagesearch.length != 0) { //intersect pagesearch
+			pages_filtered = jQuery(pages_filtered).filter(pagesearch);
+		}
+		
+		//loop all found searchentries
+	    jQuery('#tagfilter_ergebnis_'+id+' .pagelist tr').each(function (e){
+	        var $tr = jQuery(this);
+	        var $link = $tr.find('td.page a');
+	        if($link.length == 0) {
+	        	$tr.show();
+	        	return;
+	        }
+	        var id = $link.attr('title');
+	        
+	        if(jQuery.inArray(id,pages_filtered) == -1) {
+	        	$tr.hide();
+	        } else {
+	        	$tr.show();
+	        }
+	    });
+	}
+	if(flags[1]['count']) {
+		jQuery('#__tagfilter_'+id).find('.tagfilter_count_number').text(jQuery('#tagfilter_ergebnis_'+id+' .pagelist tr:visible').length + ' / ' + jQuery('#tagfilter_ergebnis_'+id+' .pagelist tr').length);
+	}
+}
 
 jQuery().ready(function(){
 	var clean_r = [];

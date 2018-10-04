@@ -8,3 +8,4 @@
 $lang['choose'] = 'wybór';
 $lang['Delete filter'] = 'Wyczyść filtr';
 $lang['missing_plugin'] = "<i>Wtyczka %s jest nieprawidłowa lub niedostępna.</i>";
+$lang['found_count'] = "Found";

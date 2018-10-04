@@ -54,6 +54,12 @@ form[data-plugin=tagfilter] fieldset.hidelabel button {
 	margin:0px 0px 0px 0px;
 }
 
+form[data-plugin=tagfilter] fieldset div.tagfilter_count {
+	margin:25px 0px 0px 10px;
+	float:left;
+	font-style: italic;
+}
+
 .select2-results li {
     margin-left:0px;
 }

@@ -8,3 +8,4 @@
 $lang['choose'] = 'wählen';
 $lang['Delete filter']='Filter zurücksetzen';
 $lang['missing_plugin'] = "<i>Plugin %s ist deaktiviert oder fehlt.</i>";
+$lang['found_count'] = "Gefunden";
