@@ -165,7 +165,7 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 		$Htag  =$this->Htag;
 		$perm = auth_quickaclcheck($pageid);
 		if (!($perm < AUTH_READ)) {
-			if(!page_exists($pageid)) $Htag->_updateTagIndex($pageid,array());
+			if(!page_exists($pageid) && !$this->isNewTagVersion()) $Htag->_updateTagIndex($pageid,array());
 			return true;
 		}
 		return false;
@@ -472,13 +472,17 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 		$Htag  =$this->Htag;
 		if(!$Htag)return false;
 
-		if($this->isNewTagVersion())
-			return false; // not supported yet
+		$tags = $Htag->_parseTagList($tags, false); //array
 		
-		$tags = $Htag->_parseTagList($tags, true); //array
+		if($this->isNewTagVersion()) {
+		    $indexer = idx_get_indexer();
+		    $indexTags = array_keys($indexer->histogram(1, 0, 3, 'subject'));
+		} else {
+		    $indexTags = array_keys($Htag->topic_idx);
+		}
 		
 		$matchedTags = array();
-		$indexTags = array_keys($Htag->topic_idx);
+		
 		foreach($indexTags as $tag) {
 			foreach($tags as $tagExpr) {
 				if($this->preg_matchTag($tagExpr, $tag))
@@ -486,14 +490,16 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 			}
 		}
 		$matchedTags = array_unique($matchedTags);
-		
 		foreach($matchedTags as $tag) {
-			$relations[$tag] = array_filter($Htag->topic_idx[$tag],function($pageid) use ($ns) {
+		    if($this->isNewTagVersion()) {
+		        $pages = $Htag->_tagIndexLookup(array($tag));
+		    } else {
+		        $pages = $Htag->topic_idx[$tag];
+		    }
+			$relations[$tag] = array_filter($pages,function($pageid) use ($ns) {
 				if ($ns === '' ||  (strpos(':'.getNS($pageid).':', ':'.$ns.':') === 0)) return true;
 			});
 		}
-		
-		
 		
 		$relations = array_filter($relations); //clean empty tags
 		ksort($relations); //sort

@@ -110,6 +110,7 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin {
 		global $INPUT;
 		global $USERINFO;
 		global $conf;
+		/* @var  $HtagfilterSyntax helper_plugin_tagfilter_syntax */ 
 		$HtagfilterSyntax = $this->loadHelper('tagfilter_syntax');
 		$flags = $opt['tfFlags'];
 
