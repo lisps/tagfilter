@@ -6,14 +6,6 @@
  * @author  lisps
  */
 
-// must be run within Dokuwiki
-if (!defined('DOKU_INC')) die();
-
-if (!defined('DOKU_LF')) define('DOKU_LF', "\n");
-if (!defined('DOKU_TAB')) define('DOKU_TAB', "\t");
-
-require_once(DOKU_INC.'inc/indexer.php');
-
 class helper_plugin_tagfilter extends DokuWiki_Plugin {
 	/**
 	 * 
