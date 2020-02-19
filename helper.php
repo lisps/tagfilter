@@ -251,8 +251,8 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 		$tags = explode(' ',$tag);
 		$this->startPageSearch($ns);
 		foreach($tags as $t){
-			if($t{0} == '+') $this->addAndTag(substr($t,1));
-			elseif($t{0} == '-') $this->addSubTag(substr($t,1));
+			if($t[0] == '+') $this->addAndTag(substr($t,1));
+			elseif($t[0] == '-') $this->addSubTag(substr($t,1));
 			else $this->addOrTag($t);
 		}
 		return $this->getPages();
