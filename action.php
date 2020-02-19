@@ -22,7 +22,7 @@ class action_plugin_tagfilter extends DokuWiki_Action_Plugin {
 		global $JSINFO;
 		global $INPUT;
 	    // filter for ft* in GET
-	    $f = create_function('$value', 'return strpos($value,"tf") === 0;');
+	    $f = function($value) { return strpos($value,"tf") === 0; };
 	    $get_tagfilter = array_filter(array_keys($_GET),$f);
 
 		//filter for ft<key>_<label> and add it to JSINFO to select it via JavaScript
