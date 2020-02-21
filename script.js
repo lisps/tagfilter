@@ -124,7 +124,10 @@ function tagfilter_submit(id,ns,flags)
 	    });
 	}
 	if(flags[1]['count']) {
-		jQuery('#__tagfilter_'+id).find('.tagfilter_count_number').text(jQuery('#tagfilter_ergebnis_'+id+' .pagelist tr:visible').length + ' / ' + jQuery('#tagfilter_ergebnis_'+id+' .pagelist tr').length);
+		jQuery('#__tagfilter_'+id).find('.tagfilter_count_number').text(
+				jQuery('#tagfilter_ergebnis_'+id+' .pagelist tr:visible > td[class=page]').length + ' / ' + 
+				
+				jQuery('#tagfilter_ergebnis_'+id+' .pagelist tr > td[class=page]').length);
 	}
 }
 

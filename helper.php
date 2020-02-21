@@ -428,7 +428,7 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin {
 		$label = $label !=''?$label:$tag;
 		return ucwords(str_replace('_',' ',trim($label,':')));
 	}
-	function th($tag) {
+	function th($tag = '') {
 		if(strpos($tag,'*'))
 			return $this->getTagCategory($tag);
 		else 
