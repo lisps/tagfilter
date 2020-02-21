@@ -161,6 +161,7 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
             'excludeTags' => array(),
             'images' => false,
             'count' => false,
+            'tagintersect' => false,
         );
     
         foreach($flags as $k=>$flag) {
@@ -218,6 +219,9 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
                     break;
                 case 'count':
                     $conf['count'] = true;
+                    break;
+                case 'tagintersect':
+                    $conf['tagintersect'] = true;
                     break;
             }
         }
