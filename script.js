@@ -75,19 +75,21 @@ function tagfilter_submit(id,ns,flags)
 		} 
 	});
 	
-	// Tags intersection
-	page_idx = 0;
-	jQuery.each(form,function(index,select) { //loop through select boxes and collect the pages
-		if(jQuery.isArray(select) && select.length) {	
-			jQuery.each(select,function(index2,tag) {
-				pages[page_idx] = pages[page_idx].filter(function(n) {
-					return tags[index][tag].indexOf(n) !== -1;
+	if(flags[1]['tagintersect'] == true) {
+		// Tags intersection
+		page_idx = 0;
+		jQuery.each(form,function(index,select) { //loop through select boxes and collect the pages
+			if(jQuery.isArray(select) && select.length) {	
+				jQuery.each(select,function(index2,tag) {
+					pages[page_idx] = pages[page_idx].filter(function(n) {
+						return tags[index][tag].indexOf(n) !== -1;
+					});
 				});
-			});
-			page_idx++;
-		} 
-	});
-	
+				page_idx++;
+			} 
+		});
+	}
+
 	if(pagesearch.length == 0 && page_idx == 0) { //nothings selected => show all
 		jQuery('#tagfilter_ergebnis_'+id+' .pagelist tr').each(function (){
 			if(flags[1]['noneonclear']) {
