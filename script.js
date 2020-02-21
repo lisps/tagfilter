@@ -91,7 +91,8 @@ function tagfilter_submit(id,ns,flags)
 	}
 
 	if(pagesearch.length == 0 && page_idx == 0) { //nothings selected => show all
-		jQuery('#tagfilter_ergebnis_'+id+' .pagelist tr').each(function (){
+
+		jQuery('#tagfilter_ergebnis_'+id+'.tagfilter > ul li').each(function (){
 			if(flags[1]['noneonclear']) {
 				var $tr = jQuery(this);
 		        var $link = $tr.find('td.page a');
@@ -104,6 +105,20 @@ function tagfilter_submit(id,ns,flags)
 				jQuery(this).show();
 			}
 			
+		});
+		
+		jQuery('#tagfilter_ergebnis_'+id+'.tagfilter table tr').each(function (){
+			if(flags[1]['noneonclear']) {
+				var $tr = jQuery(this);
+		        var $link = $tr.find('td.page a');
+				if($link.length == 0) {
+		        	$tr.show();
+		        	return;
+		        }
+				$tr.hide();
+			} else {
+				jQuery(this).show();
+			}
 		});
 
 
@@ -121,10 +136,11 @@ function tagfilter_submit(id,ns,flags)
 			pages_filtered = jQuery(pages_filtered).filter(pagesearch);
 		}
 		
-		//loop all found searchentries
-	    jQuery('#tagfilter_ergebnis_'+id+' .pagelist tr').each(function (e){
+	    
+	  //loop all found searchentries
+	    jQuery('#tagfilter_ergebnis_'+id+'.tagfilter > ul li').each(function (e){
 	        var $tr = jQuery(this);
-	        var $link = $tr.find('td.page a');
+	        var $link = $tr.find('a');
 	        if($link.length == 0) {
 	        	$tr.show();
 	        	return;
@@ -137,12 +153,34 @@ function tagfilter_submit(id,ns,flags)
 	        	$tr.show();
 	        }
 	    });
+	    jQuery('#tagfilter_ergebnis_'+id+'.tagfilter table tr').each(function (){
+	    	var $tr = jQuery(this);
+	        var $link = $tr.find('a');
+	        if($link.length == 0) {
+	        	$tr.show();
+	        	return;
+	        }
+	        var id = $link.attr('title');
+	        
+	        if(jQuery.inArray(id,pages_filtered) == -1) {
+	        	$tr.hide();
+	        } else {
+	        	$tr.show();
+	        }
+		});
 	}
 	if(flags[1]['count']) {
-		jQuery('#__tagfilter_'+id).find('.tagfilter_count_number').text(
-				jQuery('#tagfilter_ergebnis_'+id+' .pagelist tr:visible > td[class=page]').length + ' / ' + 
-				
-				jQuery('#tagfilter_ergebnis_'+id+' .pagelist tr > td[class=page]').length);
+		if(jQuery('#tagfilter_ergebnis_'+id+' tr > td[class=page]').length > 0) {
+			jQuery('#__tagfilter_'+id).find('.tagfilter_count_number').text(
+					jQuery('#tagfilter_ergebnis_'+id+' tr:visible > td[class=page]').length + ' / ' + 
+					
+					jQuery('#tagfilter_ergebnis_'+id+' tr > td[class=page]').length);
+		} else {
+			jQuery('#__tagfilter_'+id).find('.tagfilter_count_number').text(
+					jQuery('#tagfilter_ergebnis_'+id+'.tagfilter li:visible').length + ' / ' + 
+					
+					jQuery('#tagfilter_ergebnis_'+id+'.tagfilter li').length);
+		}
 	}
 }
 
