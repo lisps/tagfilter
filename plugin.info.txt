@@ -1,7 +1,7 @@
 base    tagfilter
 author  lisps, peterfromearth
 email   coder@peterfromearth.de
-date    2020-02-19
+date    2021-10-19
 name    tagfilter
 desc    easy tag search
 url     http://dokuwiki.org/plugin:tagfilter
