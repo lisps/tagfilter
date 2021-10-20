@@ -8,7 +8,7 @@ class plugin_tagfilter_ajax_test extends DokuWikiTest {
     protected $pluginsEnabled = array(
         'tag','tagfilter','pagelist'
     );
-    public function setup() {
+    public function setup() : void {
         parent::setup();
         $this->_createPages();
     }

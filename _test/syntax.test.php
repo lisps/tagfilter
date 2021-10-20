@@ -8,7 +8,7 @@ class plugin_tagfilter_syntax_test extends DokuWikiTest {
     protected $pluginsEnabled = array(
         'tag','tagfilter'
     );
-    public function setup() {
+    public function setup() : void {
         parent::setup();
         $this->_createPages();
     }
