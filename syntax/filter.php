@@ -1,9 +1,11 @@
 <?php
+
+use dokuwiki\Cache\Cache;
 /**
- * DokuWiki Plugin tagfilter (Syntax Component) 
+ * DokuWiki Plugin tagfilter (Syntax Component)
  *
  * @license GPL 2 (http://www.gnu.org/licenses/gpl.html)
- * @author  lisps    
+ * @author  lisps
  */
 
 /*
@@ -12,29 +14,31 @@
  */
 class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin {
 
-    private $_itemPos = array();
-    function incItemPos() {
+    /** @var int[] counts forms per page for creating an unique form id */
+    protected $formCounter = [];
+
+    protected function incrementFormCounter() {
         global $ID;
-        if(array_key_exists($ID,$this->_itemPos)) {
-            return $this->_itemPos[$ID]++;
+        if(array_key_exists($ID,$this->formCounter)) {
+            return $this->formCounter[$ID]++;
         } else {
-            $this->_itemPos[$ID] = 1;
+            $this->formCounter[$ID] = 1;
             return 0;
         }
     }
-    function getItemPos(){
+    protected function getFormCounter(){
         global $ID;
-        if(array_key_exists($ID,$this->_itemPos)) {
-            $this->_itemPos[$ID];
+        if(array_key_exists($ID,$this->formCounter)) {
+            return $this->formCounter[$ID];
         } else {
             return 0;
         }
     }
-	
+
     /*
      * What kind of syntax are we?
      */
-    function getType() {return 'substition';}
+    public function getType() {return 'substition';}
 
     /*
      * Where to sort in?
@@ -44,235 +48,271 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin {
     /*
      * Paragraph Type
      */
-    function getPType(){return 'block';}
+    public function getPType(){return 'block';}
 
     /*
      * Connect pattern to lexer
      */
-    function connectTo($mode) {
+    public function connectTo($mode) {
 		$this->Lexer->addSpecialPattern("\{\{tagfilter>.*?\}\}",$mode,'plugin_tagfilter_filter');
 	}
 
     /*
      * Handle the matches
      */
-    function handle($match, $state, $pos, Doku_Handler $handler) {
-		global $ID;
-		$HtagfilterSyntax = $this->loadHelper('tagfilter_syntax');
-		$opts['id']=$this->incItemPos();
-
+    public function handle($match, $state, $pos, Doku_Handler $handler) {
 		$match=trim(substr($match,12,-2));
 
-        list($match, $flags) = explode('&', $match, 2);
-        $flags = explode('&', $flags);
-        list($ns, $tag) = explode('?', $match);
+		return $this->getOpts($match) ;
+    }
 
-        if (!$tag) {
+    /**
+     * Parses syntax written by user
+     *
+     * @param string $match The text matched in the pattern
+     * @return array with:<br>
+     *      int 'id' unique number for current form,
+     *      string 'ns' list only pages from this namespace,
+     *      array 'pagelistFlags' all flags set by user in syntax, will be supplied directly to pagelist plugin,
+     *      array 'tagfilterFlags' only tags for the tagfilter plugin @see helper_plugin_tagfilter_syntax::parseFlags()
+     */
+    protected function getOpts($match) {
+        global $ID;
+
+        /** @var helper_plugin_tagfilter_syntax $HtagfilterSyntax */
+        $HtagfilterSyntax = $this->loadHelper('tagfilter_syntax');
+        $opts['id']=$this->incrementFormCounter();
+
+        list($match, $flags) = array_pad(explode('&', $match, 2), 2, '');
+        $flags = explode('&', $flags);
+
+
+        list($ns, $tag) = array_pad(explode('?', $match), 2, '');
+        if ($tag === '') {
             $tag = $ns;
             $ns   = '';
         }
 
-        if (($ns == '*') || ($ns == ':')) $ns = '';
-        elseif ($ns == '.') $ns = getNS($ID);
-        else $ns = cleanID($ns);
-		
-		$opts['ns']=$ns;
-		
-		//only flags for tagfilter 
-		$opts['tfFlags'] = $HtagfilterSyntax->parseFlags($flags);
-		
-		//all flags for pagelist plugin
-		$opts['flags']=array_map('trim',$flags);
-		
-		//read and parse tag 
-		$tagselect_r = array();
-		$select_expr_r = array_map('trim',explode('|',$tag));
-		foreach($select_expr_r as $key=>$usr_syntax){
-			$usr_syntax = explode("=",$usr_syntax);//aufsplitten in Label,RegExp,DefaultWert
-				
-			$tagselect_r['label'][$key]  = trim($usr_syntax[0]);
-			$tagselect_r['tag_expr'][$key]  = trim($usr_syntax[1]);
-			$tagselect_r['selectedTags'][$key] = isset($usr_syntax[2])?explode(' ',$usr_syntax[2]):array();
-		}
-		
-		$opts['tagselect_r'] = $tagselect_r;
-		 
-		return ($opts);
-    }
-            
-    /* 
-     * Create output
-     */
-    function render($mode, Doku_Renderer $renderer, $opt)
-	{
-		global $INFO;
-		global $ID;
-		global $INPUT;
-		global $USERINFO;
-		global $conf;
-		/* @var  $HtagfilterSyntax helper_plugin_tagfilter_syntax */ 
-		$HtagfilterSyntax = $this->loadHelper('tagfilter_syntax');
-		$flags = $opt['tfFlags'];
+        if (($ns == '*') || ($ns == ':')) {
+            $ns = '';
+        } elseif ($ns == '.') {
+            $ns = getNS($ID);
+        } else {
+            $ns = cleanID($ns);
+        }
 
-		if($mode === 'metadata') return false;
-		if($mode === 'xhtml') {
-			$renderer->info['cache'] = false;
-			
-			/* @var $Htagfilter helper_plugin_tagfilter */
+        $opts['ns'] = $ns;
+
+        //only flags for tagfilter
+        $opts['tagfilterFlags'] = $HtagfilterSyntax->parseFlags($flags);
+
+        //all flags set by user for pagelist plugin
+        $opts['pagelistFlags'] = array_map('trim',$flags);
+
+        //read and parse tag
+        $tagFilters = [];
+        $selectExpressions = array_map('trim',explode('|',$tag));
+        foreach($selectExpressions as $key=>$parts){
+            $parts = explode("=",$parts);//split in Label,RegExp,Default value
+
+            $tagFilters['label'][$key] = trim($parts[0]);
+            $tagFilters['tagExpression'][$key] = trim($parts[1] ?? '');
+            $tagFilters['selectedTags'][$key] = isset($parts[2]) ? explode(' ', $parts[2]) : [];
+        }
+
+        $opts['tagFilters'] = $tagFilters;
+
+        return $opts;
+    }
+
+    /**
+     * Create output
+     *
+     * @param string $format output format being rendered
+     * @param Doku_Renderer $renderer the current renderer object
+     * @param array $opt data created by handler()
+     * @return boolean rendered correctly?
+     */
+    public function render($format, Doku_Renderer $renderer, $opt)
+	{
+		global $INFO, $ID, $conf, $INPUT;
+
+		/* @var  helper_plugin_tagfilter_syntax $HtagfilterSyntax */
+		$HtagfilterSyntax = $this->loadHelper('tagfilter_syntax');
+		$flags = $opt['tagfilterFlags'];
+
+		if($format === 'metadata') return false;
+		if($format === 'xhtml') {
+			$renderer->nocache();
+
+			/* @var helper_plugin_tagfilter $Htagfilter */
 			$Htagfilter = $this->loadHelper('tagfilter');
 			$renderer->cdata("\n");
 
-			
-			$depends = array('files'=>array(
-				$INFO['filepath'],
-				DOKU_CONF . '/acl.auth.php',
-				getConfigFiles('main'),		
-			));
-			
-			if($flags['cache']){
-				$depends['age']=$flags['cache'];
+            $depends = [
+                'files' => [
+                    $INFO['filepath'],
+                    DOKU_CONF . 'acl.auth.php',
+                ]
+            ];
+            $depends['files'] = array_merge($depends['files'], getConfigFiles('main'));
+
+            if($flags['cache']){
+				$depends['age'] = $flags['cache'];
 			} else if($flags['cache'] === false){
-				//build cache dependencies
+				//build cache dependencies TODO check if this bruteforce method (adds just all pages of namespace as dependency) is proportional
 				$dir  = utf8_encodeFN(str_replace(':','/',$opt['ns']));
-				$data = array();
-				search($data,$conf['datadir'],array($HtagfilterSyntax,'search_all_pages'),array('ns' => $opt['ns'],'excludeNs'=>$flags['excludeNs']),$dir); //all pages inside namespace
+				$data = [];
+                $opts = [
+                    'ns' => $opt['ns'],
+                    'excludeNs'=>$flags['excludeNs']
+                ];
+				search($data,$conf['datadir'], [$HtagfilterSyntax,'search_all_pages'],$opts ,$dir); //all pages inside namespace
 				$depends['files'] = array_merge($depends['files'],$data);
 			} else {
 				$depends['purge'] = true;
 			}
-			
-			$cache_key = 'plugin_tagfilter_'.$ID . '_' . $opt['id'];
-			$cache = new cache($cache_key, '.tcache');
-			if(!$cache->useCache($depends)) {
+
+            //cache to store tagfilter options, matched pages and prepared data
+			$filterDataCacheKey = 'plugin_tagfilter_'.$ID . '_' . $opt['id'];
+			$filterDataCache = new Cache($filterDataCacheKey, '.tcache');
+			if(!$filterDataCache->useCache($depends)) {
 				$cachedata = $HtagfilterSyntax->getTagPageRelations($opt);
 				$cachedata[] = $HtagfilterSyntax->prepareList($cachedata[1],$flags);
-				$cache->storeCache(serialize($cachedata));
+				$filterDataCache->storeCache(serialize($cachedata));
 			} else {
-				$cachedata = unserialize($cache->retrieveCache());
+				$cachedata = unserialize($filterDataCache->retrieveCache());
 			}
 
-			list($tagselect_r, $pageids, $preparedPages) = $cachedata;
-			
-			$cache_u_key = 'plugin_tagfilter_'.$ID . '_' . $opt['id'] . '_' . $_SERVER['REMOTE_USER'].$_SERVER['HTTP_HOST'].$_SERVER['SERVER_PORT'];
-			$cache_u = new cache($cache_u_key, '.tucache');
-			
-			foreach($pageids as &$pageid) {
+			list($tagFilters, $allPageids, $preparedPages) = $cachedata;
+
+            // cache to store html per user
+			$htmlPerUserCacheKey = 'plugin_tagfilter_'.$ID . '_' . $opt['id'] . '_' . $INPUT->server->str('REMOTE_USER')
+                .$INPUT->server->str('HTTP_HOST') . $INPUT->server->str('SERVER_PORT');
+			$htmlPerUserCache = new Cache($htmlPerUserCacheKey, '.tucache');
+
+            //purge cache if pages does not exist anymore
+			foreach($allPageids as $key => $pageid) {
 				if(!page_exists($pageid)) {
-					unset($pageid);
-					$cache->removeCache();
-					$cache_u->removeCache();
+                    unset($allPageids[$key]);
+					$filterDataCache->removeCache();
+					$htmlPerUserCache->removeCache();
 				}
-			} unset($pageid);
-			
-			if(!$cache_u->useCache(array('files'=>array($cache->cache)))) {
+			}
+
+
+			if(!$htmlPerUserCache->useCache(['files'=> [$filterDataCache->cache]])) {
 				$output = '';
-				
+
 				//check for read access
-				foreach($pageids as $key=>$pageid) {
-					if(! $Htagfilter->canRead($pageid)) {
-						unset($pageids[$key]);
+				foreach($allPageids as $key => $pageid) {
+					if(!$Htagfilter->canRead($pageid)) {
+						unset($allPageids[$key]);
 					}
 				}
-				
+
 				//check tags for visibility
-				foreach($tagselect_r['tagPages'] as &$select_r) {
-				    if(!is_array($select_r)) $select_r = array();
-					foreach($select_r as $tag=>$pageid_r) {
-						if(count(array_intersect(($pageid_r), $pageids)) == 0) {
-							unset($select_r[$tag]);
+				foreach($tagFilters['pagesPerMatchedTags'] as &$pagesPerMatchedTag) {
+				    if(!is_array($pagesPerMatchedTag)) {
+                        $pagesPerMatchedTag = [];
+                    }
+					foreach($pagesPerMatchedTag as $tag=>$pageidsPerTag) {
+						if(count(array_intersect($pageidsPerTag, $allPageids)) == 0) {
+							unset($pagesPerMatchedTag[$tag]);
 						}
 					}
 				}
-				
+                unset($pagesPerMatchedTag);
+
 				foreach($preparedPages as $key=>$page) {
-					if(!in_array($page['id'],$pageids)) {
+					if(!in_array($page['id'],$allPageids)) {
 						unset($preparedPages[$key]);
 					}
 				}
-				 
+
 				$form = new Doku_Form(array(
 					'id'=>'tagdd_'.$opt['id'],
 					'data-idx'=>$opt['id'],
 					'data-plugin'=>'tagfilter',
-					'data-tags' => json_encode($tagselect_r['tagPages']),
+					'data-tags' => json_encode($tagFilters['pagesPerMatchedTags']),
 				));
 				$output .= "\n";
 				//Fieldset manuell hinzufügen da ein style Parameter übergeben werden soll
 				$form->addElement(array(
-						'_elem'=>'openfieldset', 
+						'_elem'=>'openfieldset',
 						'_legend'=>'Tagfilter',
 						'style'=>'text-align:left;width:99%',
 						'id'=>'__tagfilter_'.$opt['id'],
 						'class'=>($flags['labels']!==false)?'':'hidelabel',
-						
+
 				));
 				$form->_infieldset=true; //Fieldset starten
-				
+
 				if($flags['pagesearch']){
 					$label = $flags['pagesearchlabel'];
-	
-					$pagetitle_r = array();
-					foreach($pageids as $pageid) {
-						$pagetitle_r[$pageid] = $Htagfilter->getPageTitle($pageid);
+
+					$pagetitles = [];
+					foreach($allPageids as $pageid) {
+						$pagetitles[$pageid] = $Htagfilter->getPageTitle($pageid);
 					}
-					asort($pagetitle_r, SORT_NATURAL|SORT_FLAG_CASE);
-	
-					$selectedTags = array();
+					asort($pagetitles, SORT_NATURAL|SORT_FLAG_CASE);
+
+					$selectedTags = [];
 					$id = '__tagfilter_page_'.$opt['id'];
-	
-					$options = array(//generelle Optionen für DropDownListe onchange->submit von id namespace und den flags für pagelist
-						'onChange'=>'tagfilter_submit('.$opt['id'].','.json_encode($opt['ns']).','.json_encode(array($opt['flags'],$flags)).')',
+
+					$attrs = [//generelle Optionen für DropDownListe onchange->submit von id namespace und den flags für pagelist
+						'onChange'=>'tagfilter_submit('.$opt['id'].','.json_encode($opt['ns']).','.json_encode([$opt['pagelistFlags'],$flags]).')',
 						'class'=>'tagdd_select tagfilter tagdd_select_'.$opt['id']  . ($flags['chosen']?' chosen':''),
 						'data-placeholder'=>hsc($label.' '.$this->getLang('choose')),
 						'data-label'=>hsc(utf8_strtolower(trim($label))),
-						);
+                    ];
 					if($flags['multi']){ //unterscheidung ob Multiple oder Single
-						$options['multiple']='multiple';
-						$options['size']=$this->getConf("DropDownList_size");
+						$attrs['multiple']='multiple';
+						$attrs['size']=$this->getConf("DropDownList_size");
 					} else {
-						$options['size']=1;
-						$pagetitle_r = array_reverse($pagetitle_r,true);
-						$pagetitle_r['']='';
-						$pagetitle_r = array_reverse($pagetitle_r,true);
+						$attrs['size']=1;
+						$pagetitles = array_reverse($pagetitles,true);
+						$pagetitles['']='';
+						$pagetitles = array_reverse($pagetitles,true);
 					}
-					$form->addElement(form_makeListboxField($label, $pagetitle_r, $selectedTags , $label, $id, 'tagfilter', $options));
+					$form->addElement(form_makeListboxField($label, $pagetitles, $selectedTags , $label, $id, 'tagfilter', $attrs));
 				}
 				$output .= '<script type="text/javascript">/*<![CDATA[*/ var tagfilter_container = {}; /*!]]>*/</script>'."\n";
-				//$output .= '<script type="text/javascript">/*<![CDATA[*/ '.'tagfilter_container.tagfilter_'.$opt['id'].' = '.json_encode($tagselect_r['tags2']).'; /*!]]>*/</script>'."\n";
-				foreach($tagselect_r['tagPages'] as $key=>$pages){
+				//$output .= '<script type="text/javascript">/*<![CDATA[*/ '.'tagfilter_container.tagfilter_'.$opt['id'].' = '.json_encode($tagFilters['tags2']).'; /*!]]>*/</script>'."\n";
+                foreach($tagFilters['pagesPerMatchedTags'] as $key=> $pagesPerMatchedTag){
 					$id=false;
-					$label = $tagselect_r['label'][$key];
-					$selectedTags = $tagselect_r['selectedTags'][$key];
-					
+					$label = $tagFilters['label'][$key];
+					$selectedTags = $tagFilters['selectedTags'][$key];
+
 					//get tag labels
-					$tags = array();
-					
-					foreach(array_keys($tagselect_r['tagPages'][$key]) as $tagid) {
+					$tags = [];
+
+					foreach(array_keys($pagesPerMatchedTag) as $tagid) {
 						$tags[$tagid] = $Htagfilter->getTagLabel($tagid);
 					}
-					
+
 					foreach($selectedTags as &$item) {
 						$item = utf8_strtolower(trim($item));
 					} unset($item);
-					
-						
-					$options = array(//generelle Optionen für DropDownListe onchange->submit von id namespace und den flags für pagelist
-						'onChange'=>'tagfilter_submit('.$opt['id'].','.json_encode($opt['ns']).','.json_encode(array($opt['flags'],$flags)).')',
+
+
+					$attrs = [//generelle Optionen für DropDownListe onchange->submit von id namespace und den flags für pagelist
+						'onChange'=>'tagfilter_submit('.$opt['id'].','.json_encode($opt['ns']).','.json_encode([$opt['pagelistFlags'],$flags]).')',
 						'class'=>'tagdd_select tagfilter tagdd_select_'.$opt['id'] . ($flags['chosen']?' chosen':''),
 						'data-placeholder'=>hsc($label.' '.$this->getLang('choose')),
 						'data-label'=>hsc(str_replace(' ','_',utf8_strtolower(trim($label)))),
-						
-						);
+
+                    ];
 					if($flags['multi']){ //unterscheidung ob Multiple oder Single
-						$options['multiple']='multiple';
-						$options['size']=$this->getConf("DropDownList_size");
+						$attrs['multiple']='multiple';
+						$attrs['size']=$this->getConf("DropDownList_size");
 					} else {
-						$options['size']=1;
+						$attrs['size']=1;
 						$tags = array_reverse($tags,true);
 						$tags['']='';
 						$tags = array_reverse($tags,true);
 					}
-					
+
 					if($flags['chosen']){
 						$links = array();
 						foreach($tags as $k=>$t){
@@ -284,42 +324,42 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin {
 						$output .= '<script type="text/javascript">/*<![CDATA[*/ tagfilter_container.'.$jsVar.' ='
 											.json_encode($links).
 											'; /*!]]>*/</script>'."\n";
-	
+
 						$id='__tagfilter_'.$opt["id"].'_'.rand();
-	
+
 						if($flags['tagimage']){
-						    $options['data-tagimage'] = $jsVar;
+						    $attrs['data-tagimage'] = $jsVar;
 						}
-	
-					}			
-					$form->addElement(form_makeListboxField($label, $tags, $selectedTags , $label, $id, 'tagfilter' , $options));
+
+					}
+					$form->addElement(form_makeListboxField($label, $tags, $selectedTags , $label, $id, 'tagfilter' , $attrs));
 				}
-				
+
 				$form->addElement(form_makeButton('button','', $this->getLang('Delete filter'), array('onclick'=>'tagfilter_cleanform('.$opt['id'].',true)')));
 				if($flags['count']) {
 				    $form->addElement('<div class="tagfilter_count">'.$this->getLang('found_count').': ' . '<span class="tagfilter_count_number"></span></div>');
 				}
 				$form->endFieldset();
 				$output .= $form->getForm();//Form Ausgeben
-							
+
 				$output.= "<div id='tagfilter_ergebnis_".$opt['id']."' class='tagfilter'>";
-				//dbg($opt['flags']);
-				$output .= $HtagfilterSyntax->renderList($preparedPages,$flags, $opt['flags']);
+				//dbg($opt['pagelistFlags']);
+				$output .= $HtagfilterSyntax->renderList($preparedPages,$flags, $opt['pagelistFlags']);
 				$output.= "</div>";
-				
-				$cache_u->storeCache($output);
-				
+
+				$htmlPerUserCache->storeCache($output);
+
 			} else {
-				$output =$cache_u->retrieveCache();
+				$output =$htmlPerUserCache->retrieveCache();
 			}
-			
+
 			$renderer->doc .= $output;
-		}	
+        }
 		return true;
 	}
-	
 
-	
+
+
 }
 
 //Setup VIM: ex: et ts=4 enc=utf-8 :
