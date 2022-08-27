@@ -1,34 +1,39 @@
 <?php
 
 use dokuwiki\Cache\Cache;
+
 /**
  * DokuWiki Plugin tagfilter (Syntax Component)
  *
  * @license GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author  lisps
  */
-
 /*
  * All DokuWiki plugins to extend the parser/rendering mechanism
  * need to inherit from this class
  */
-class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin {
+
+class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin
+{
 
     /** @var int[] counts forms per page for creating an unique form id */
     protected $formCounter = [];
 
-    protected function incrementFormCounter() {
+    protected function incrementFormCounter()
+    {
         global $ID;
-        if(array_key_exists($ID,$this->formCounter)) {
+        if (array_key_exists($ID, $this->formCounter)) {
             return $this->formCounter[$ID]++;
         } else {
             $this->formCounter[$ID] = 1;
             return 0;
         }
     }
-    protected function getFormCounter(){
+
+    protected function getFormCounter()
+    {
         global $ID;
-        if(array_key_exists($ID,$this->formCounter)) {
+        if (array_key_exists($ID, $this->formCounter)) {
             return $this->formCounter[$ID];
         } else {
             return 0;
@@ -38,32 +43,43 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin {
     /*
      * What kind of syntax are we?
      */
-    public function getType() {return 'substition';}
+    public function getType()
+    {
+        return 'substition';
+    }
 
     /*
      * Where to sort in?
      */
-    function getSort() {return 155;}
+    function getSort()
+    {
+        return 155;
+    }
 
     /*
      * Paragraph Type
      */
-    public function getPType(){return 'block';}
+    public function getPType()
+    {
+        return 'block';
+    }
 
     /*
      * Connect pattern to lexer
      */
-    public function connectTo($mode) {
-		$this->Lexer->addSpecialPattern("\{\{tagfilter>.*?\}\}",$mode,'plugin_tagfilter_filter');
-	}
+    public function connectTo($mode)
+    {
+        $this->Lexer->addSpecialPattern("\{\{tagfilter>.*?\}\}", $mode, 'plugin_tagfilter_filter');
+    }
 
     /*
      * Handle the matches
      */
-    public function handle($match, $state, $pos, Doku_Handler $handler) {
-		$match=trim(substr($match,12,-2));
+    public function handle($match, $state, $pos, Doku_Handler $handler)
+    {
+        $match = trim(substr($match, 12, -2));
 
-		return $this->getOpts($match) ;
+        return $this->getOpts($match);
     }
 
     /**
@@ -76,12 +92,13 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin {
      *      array 'pagelistFlags' all flags set by user in syntax, will be supplied directly to pagelist plugin,
      *      array 'tagfilterFlags' only tags for the tagfilter plugin @see helper_plugin_tagfilter_syntax::parseFlags()
      */
-    protected function getOpts($match) {
+    protected function getOpts($match)
+    {
         global $ID;
 
         /** @var helper_plugin_tagfilter_syntax $HtagfilterSyntax */
         $HtagfilterSyntax = $this->loadHelper('tagfilter_syntax');
-        $opts['id']=$this->incrementFormCounter();
+        $opts['id'] = $this->incrementFormCounter();
 
         list($match, $flags) = array_pad(explode('&', $match, 2), 2, '');
         $flags = explode('&', $flags);
@@ -90,7 +107,7 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin {
         list($ns, $tag) = array_pad(explode('?', $match), 2, '');
         if ($tag === '') {
             $tag = $ns;
-            $ns   = '';
+            $ns = '';
         }
 
         if (($ns == '*') || ($ns == ':')) {
@@ -107,13 +124,13 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin {
         $opts['tagfilterFlags'] = $HtagfilterSyntax->parseFlags($flags);
 
         //all flags set by user for pagelist plugin
-        $opts['pagelistFlags'] = array_map('trim',$flags);
+        $opts['pagelistFlags'] = array_map('trim', $flags);
 
         //read and parse tag
         $tagFilters = [];
-        $selectExpressions = array_map('trim',explode('|',$tag));
-        foreach($selectExpressions as $key=>$parts){
-            $parts = explode("=",$parts);//split in Label,RegExp,Default value
+        $selectExpressions = array_map('trim', explode('|', $tag));
+        foreach ($selectExpressions as $key => $parts) {
+            $parts = explode("=", $parts);//split in Label,RegExp,Default value
 
             $tagFilters['label'][$key] = trim($parts[0]);
             $tagFilters['tagExpression'][$key] = trim($parts[1] ?? '');
@@ -134,18 +151,18 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin {
      * @return boolean rendered correctly?
      */
     public function render($format, Doku_Renderer $renderer, $opt)
-	{
-		global $INFO, $ID, $conf, $INPUT;
+    {
+        global $INFO, $ID, $conf, $INPUT;
 
-		/* @var  helper_plugin_tagfilter_syntax $HtagfilterSyntax */
-		$HtagfilterSyntax = $this->loadHelper('tagfilter_syntax');
-		$flags = $opt['tagfilterFlags'];
+        /* @var  helper_plugin_tagfilter_syntax $HtagfilterSyntax */
+        $HtagfilterSyntax = $this->loadHelper('tagfilter_syntax');
+        $flags = $opt['tagfilterFlags'];
 
-		if($format === 'metadata') return false;
-		if($format === 'xhtml') {
-			$renderer->nocache();
+        if ($format === 'metadata') return false;
+        if ($format === 'xhtml') {
+            $renderer->nocache();
 
-			$renderer->cdata("\n");
+            $renderer->cdata("\n");
 
             $depends = [
                 'files' => [
@@ -155,61 +172,61 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin {
             ];
             $depends['files'] = array_merge($depends['files'], getConfigFiles('main'));
 
-            if($flags['cache']){
-				$depends['age'] = $flags['cache'];
-			} else if($flags['cache'] === false){
-				//build cache dependencies TODO check if this bruteforce method (adds just all pages of namespace as dependency) is proportional
-				$dir  = utf8_encodeFN(str_replace(':','/',$opt['ns']));
-				$data = [];
+            if ($flags['cache']) {
+                $depends['age'] = $flags['cache'];
+            } else if ($flags['cache'] === false) {
+                //build cache dependencies TODO check if this bruteforce method (adds just all pages of namespace as dependency) is proportional
+                $dir = utf8_encodeFN(str_replace(':', '/', $opt['ns']));
+                $data = [];
                 $opts = [
                     'ns' => $opt['ns'],
-                    'excludeNs'=>$flags['excludeNs']
+                    'excludeNs' => $flags['excludeNs']
                 ];
-				search($data,$conf['datadir'], [$HtagfilterSyntax,'search_all_pages'],$opts ,$dir); //all pages inside namespace
-				$depends['files'] = array_merge($depends['files'],$data);
-			} else {
-				$depends['purge'] = true;
-			}
+                search($data, $conf['datadir'], [$HtagfilterSyntax, 'search_all_pages'], $opts, $dir); //all pages inside namespace
+                $depends['files'] = array_merge($depends['files'], $data);
+            } else {
+                $depends['purge'] = true;
+            }
 
             //cache to store tagfilter options, matched pages and prepared data
-			$filterDataCacheKey = 'plugin_tagfilter_'.$ID . '_' . $opt['id'];
-			$filterDataCache = new Cache($filterDataCacheKey, '.tcache');
-			if(!$filterDataCache->useCache($depends)) {
-				$cachedata = $HtagfilterSyntax->getTagPageRelations($opt);
-				$cachedata[] = $HtagfilterSyntax->prepareList($cachedata[1],$flags);
-				$filterDataCache->storeCache(serialize($cachedata));
-			} else {
-				$cachedata = unserialize($filterDataCache->retrieveCache());
-			}
+            $filterDataCacheKey = 'plugin_tagfilter_' . $ID . '_' . $opt['id'];
+            $filterDataCache = new Cache($filterDataCacheKey, '.tcache');
+            if (!$filterDataCache->useCache($depends)) {
+                $cachedata = $HtagfilterSyntax->getTagPageRelations($opt);
+                $cachedata[] = $HtagfilterSyntax->prepareList($cachedata[1], $flags);
+                $filterDataCache->storeCache(serialize($cachedata));
+            } else {
+                $cachedata = unserialize($filterDataCache->retrieveCache());
+            }
 
-			list($tagFilters, $allPageids, $preparedPages) = $cachedata;
+            list($tagFilters, $allPageids, $preparedPages) = $cachedata;
 
             // cache to store html per user
-			$htmlPerUserCacheKey = 'plugin_tagfilter_'.$ID . '_' . $opt['id'] . '_' . $INPUT->server->str('REMOTE_USER')
-                .$INPUT->server->str('HTTP_HOST') . $INPUT->server->str('SERVER_PORT');
-			$htmlPerUserCache = new Cache($htmlPerUserCacheKey, '.tucache');
+            $htmlPerUserCacheKey = 'plugin_tagfilter_' . $ID . '_' . $opt['id'] . '_' . $INPUT->server->str('REMOTE_USER')
+                . $INPUT->server->str('HTTP_HOST') . $INPUT->server->str('SERVER_PORT');
+            $htmlPerUserCache = new Cache($htmlPerUserCacheKey, '.tucache');
 
             //purge cache if pages does not exist anymore
-			foreach($allPageids as $key => $pageid) {
-				if(!page_exists($pageid)) {
+            foreach ($allPageids as $key => $pageid) {
+                if (!page_exists($pageid)) {
                     unset($allPageids[$key]);
-					$filterDataCache->removeCache();
-					$htmlPerUserCache->removeCache();
-				}
-			}
+                    $filterDataCache->removeCache();
+                    $htmlPerUserCache->removeCache();
+                }
+            }
 
 
-			if(!$htmlPerUserCache->useCache(['files'=> [$filterDataCache->cache]])) {
+            if (!$htmlPerUserCache->useCache(['files' => [$filterDataCache->cache]])) {
                 $html = $this->htmlOutput($tagFilters, $allPageids, $preparedPages, $opt);
                 $htmlPerUserCache->storeCache($html);
-			} else {
-                $html =$htmlPerUserCache->retrieveCache();
-			}
+            } else {
+                $html = $htmlPerUserCache->retrieveCache();
+            }
 
-			$renderer->doc .= $html;
+            $renderer->doc .= $html;
         }
-		return true;
-	}
+        return true;
+    }
 
     /**
      * Returns html of the tagfilter form
@@ -256,22 +273,22 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin {
             }
         }
 
-        $form = new Doku_Form(array(
+        $form = new Doku_Form([
             'id' => 'tagdd_' . $opt['id'],
             'data-idx' => $opt['id'],
             'data-plugin' => 'tagfilter',
             'data-tags' => json_encode($tagFilters['pagesPerMatchedTags']),
-        ));
+        ]);
         $output .= "\n";
         //Fieldset manuell hinzufügen da ein style Parameter übergeben werden soll
-        $form->addElement(array(
+        $form->addElement([
             '_elem' => 'openfieldset',
             '_legend' => 'Tagfilter',
             'style' => 'text-align:left;width:99%',
             'id' => '__tagfilter_' . $opt['id'],
             'class' => ($flags['labels'] !== false) ? '' : 'hidelabel',
 
-        ));
+        ]);
         $form->_infieldset = true; //Fieldset starten
 
         if ($flags['pagesearch']) {
@@ -341,11 +358,11 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin {
             }
 
             if ($flags['chosen']) {
-                $links = array();
+                $links = [];
                 foreach ($tags as $k => $t) {
-                    $links[$k] = array(
+                    $links[$k] = [
                         'link' => $Htagfilter->getImageLinkByTag($k),
-                    );
+                    ];
                 }
                 $jsVar = 'tagfilter_jsVar_' . rand();
                 $output .= '<script type="text/javascript">/*<![CDATA[*/ tagfilter_container.' . $jsVar . ' ='
@@ -362,7 +379,7 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin {
             $form->addElement(form_makeListboxField($label, $tags, $selectedTags, $label, $id, 'tagfilter', $attrs));
         }
 
-        $form->addElement(form_makeButton('button', '', $this->getLang('Delete filter'), array('onclick' => 'tagfilter_cleanform(' . $opt['id'] . ',true)')));
+        $form->addElement(form_makeButton('button', '', $this->getLang('Delete filter'), ['onclick' => 'tagfilter_cleanform(' . $opt['id'] . ',true)']));
         if ($flags['count']) {
             $form->addElement('<div class="tagfilter_count">' . $this->getLang('found_count') . ': ' . '<span class="tagfilter_count_number"></span></div>');
         }

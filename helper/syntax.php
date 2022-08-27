@@ -1,4 +1,5 @@
 <?php
+
 use dokuwiki\Cache\Cache;
 
 class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
@@ -27,42 +28,43 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
      *      - array $pageids ids of related pages
      *
      */
-    public function getTagPageRelations($opt) {
+    public function getTagPageRelations($opt)
+    {
         /* @var helper_plugin_tagfilter $Htagfilter */
         $Htagfilter = $this->loadHelper('tagfilter');
 
         $flags = $opt['tagfilterFlags'];
 
         $tagFilters = $opt['tagFilters'];
-        foreach($tagFilters['tagExpression'] as $key=>$tagExpression){ //build tag->pages relation
-            $tagFilters['pagesPerMatchedTags'][$key] = $Htagfilter->getPagesByMatchedTags($tagExpression,$opt['ns']);
+        foreach ($tagFilters['tagExpression'] as $key => $tagExpression) { //build tag->pages relation
+            $tagFilters['pagesPerMatchedTags'][$key] = $Htagfilter->getPagesByMatchedTags($tagExpression, $opt['ns']);
         }
 
         //extract all pageids
         $allPageids = [];
-        foreach($tagFilters['pagesPerMatchedTags'] as $pagesPerMatchedTag){
-            if(!is_array($pagesPerMatchedTag)) {
+        foreach ($tagFilters['pagesPerMatchedTags'] as $pagesPerMatchedTag) {
+            if (!is_array($pagesPerMatchedTag)) {
                 continue;
             }
-            foreach($pagesPerMatchedTag as $tag => $pageidsPerTag){
-                if(!empty($flags['withTags']) && !in_array($tag,$flags['withTags'])) {
+            foreach ($pagesPerMatchedTag as $tag => $pageidsPerTag) {
+                if (!empty($flags['withTags']) && !in_array($tag, $flags['withTags'])) {
                     continue;
                 }
-                if(!empty($flags['excludeTags']) && in_array($tag,$flags['excludeTags'])) {
+                if (!empty($flags['excludeTags']) && in_array($tag, $flags['excludeTags'])) {
                     continue;
                 }
-                $allPageids = array_merge($allPageids,$pageidsPerTag);
+                $allPageids = array_merge($allPageids, $pageidsPerTag);
             }
         }
 
-        $allPageids = array_filter($allPageids,function($val) use($opt){
+        $allPageids = array_filter($allPageids, function ($val) use ($opt) {
             //Template nicht anzeigen
-            if(strpos($val,'_template')!==false) {
+            if (strpos($val, '_template') !== false) {
                 return false;
             }
 
-            foreach($opt['tagfilterFlags']['excludeNs'] as $excludeNs) {
-                if(strpos($val, $excludeNs) === 0) {
+            foreach ($opt['tagfilterFlags']['excludeNs'] as $excludeNs) {
+                if (strpos($val, $excludeNs) === 0) {
                     return false;
                 }
             }
@@ -72,10 +74,10 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
         $allPageids = array_unique($allPageids); //TODO cache this
 
         //cache $pageids and $tagFilters for all users
-        return array(
+        return [
             $tagFilters,
             $allPageids
-        );
+        ];
     }
 
     /**
@@ -97,43 +99,43 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
      *          - for each tagcolumn: string '<tagexpr as column key>' html of cell
      *          - for each tagimagecolumn: string '<tagexpr as column key>' html of cell
      */
-    public function prepareList($pageids, $flags) {
+    public function prepareList($pageids, $flags)
+    {
         global $ID;
         global $INFO;
 
         /* @var helper_plugin_tagfilter $Htagfilter */
         $Htagfilter = $this->loadHelper('tagfilter');
 
-        if(!isset($flags['tagcolumn'])) {
-            $flags['tagcolumn'] = array();
+        if (!isset($flags['tagcolumn'])) {
+            $flags['tagcolumn'] = [];
         }
 
 
-
-        $pages = array();
+        $pages = [];
         $_uniqueid = 0;
-        foreach($pageids as $page){
+        foreach ($pageids as $page) {
 
-            $depends = ['files'=> [
+            $depends = ['files' => [
                 $INFO['filepath'],
                 wikiFN($page)
             ]];
-            $cache_key = 'plugin_tagfilter_'.$ID . '_' . $page;
+            $cache_key = 'plugin_tagfilter_' . $ID . '_' . $page;
             $cache = new Cache($cache_key, '.tpcache');
-            if(!$cache->useCache($depends)) {
+            if (!$cache->useCache($depends)) {
                 $title = p_get_metadata($page, 'title', METADATA_DONT_RENDER);
 
                 $cache_page = [
-                    'title' => $title?:$page,
+                    'title' => $title ?: $page,
                     'id' => $page,
-                    'tmp_id' => $title?:(noNS($page)?:$page),
+                    'tmp_id' => $title ?: (noNS($page) ?: $page),
                 ];
 
-                foreach($flags['tagcolumn'] as $tagcolumn){
-                    $cache_page[hsc($tagcolumn)] = $Htagfilter->td($page,hsc($tagcolumn));
+                foreach ($flags['tagcolumn'] as $tagcolumn) {
+                    $cache_page[hsc($tagcolumn)] = $Htagfilter->td($page, hsc($tagcolumn));
                 }
-                foreach($flags['tagimagecolumn'] as $tagimagecolumn){
-                    $cache_page[hsc($tagimagecolumn[0]).' '] = $Htagfilter->getTagImageColumn($page,$tagimagecolumn[0], $tagimagecolumn[1]);
+                foreach ($flags['tagimagecolumn'] as $tagimagecolumn) {
+                    $cache_page[hsc($tagimagecolumn[0]) . ' '] = $Htagfilter->getTagImageColumn($page, $tagimagecolumn[0], $tagimagecolumn[1]);
                 }
                 $cache->storeCache(serialize($cache_page));
             } else {
@@ -142,18 +144,18 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
 
             //create unique key
             $tmp_id = $cache_page['tmp_id'];
-            if(isset($pages[$tmp_id])) {
-                $tmp_id .= '_'.$_uniqueid++;
+            if (isset($pages[$tmp_id])) {
+                $tmp_id .= '_' . $_uniqueid++;
             }
 
             $pages[$tmp_id] = $cache_page;
         }
 
 
-        if($flags['rsort']) {
-            krsort($pages,SORT_NATURAL|SORT_FLAG_CASE);
+        if ($flags['rsort']) {
+            krsort($pages, SORT_NATURAL | SORT_FLAG_CASE);
         } else {
-            ksort($pages,SORT_NATURAL|SORT_FLAG_CASE);
+            ksort($pages, SORT_NATURAL | SORT_FLAG_CASE);
         }
         return $pages;
     }
@@ -172,37 +174,37 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
      * @param array $pagelistflags all flags set by user
      * @return false|string
      */
-    public function renderList($pages, $flags, $pagelistflags) {
-          if(!isset($flags['tagcolumn'])) {
+    public function renderList($pages, $flags, $pagelistflags)
+    {
+        if (!isset($flags['tagcolumn'])) {
             $flags['tagcolumn'] = [];
         }
 
 
-
         // let Pagelist Plugin do the work for us
-        /* @var helper_plugin_pagelist $Hpagelist*/
+        /* @var helper_plugin_pagelist $Hpagelist */
         if (plugin_isdisabled('pagelist')
             || (!$Hpagelist = plugin_load('helper', 'pagelist'))) {
-                msg($this->getLang('missing_pagelistplugin'), -1);
-                return false;
-            }
+            msg($this->getLang('missing_pagelistplugin'), -1);
+            return false;
+        }
 
-            foreach($flags['tagcolumn'] as $tagcolumn) {
-                $Hpagelist->addColumn('tagfilter', hsc($tagcolumn));
-            }
-            foreach($flags['tagimagecolumn'] as $tagimagecolumn) {
-                $Hpagelist->addColumn('tagfilter', hsc($tagimagecolumn[0] . ' '));
-            }
+        foreach ($flags['tagcolumn'] as $tagcolumn) {
+            $Hpagelist->addColumn('tagfilter', hsc($tagcolumn));
+        }
+        foreach ($flags['tagimagecolumn'] as $tagimagecolumn) {
+            $Hpagelist->addColumn('tagfilter', hsc($tagimagecolumn[0] . ' '));
+        }
 
-            unset($flags['tagcolumn']);  //TODO unset is not needed because pagelistflags are separate array?
-            $Hpagelist->setFlags($pagelistflags);
-            $Hpagelist->startList();
+        unset($flags['tagcolumn']);  //TODO unset is not needed because pagelistflags are separate array?
+        $Hpagelist->setFlags($pagelistflags);
+        $Hpagelist->startList();
 
-            foreach ($pages as $page) {
-                $Hpagelist->addPage($page);
-            }
+        foreach ($pages as $page) {
+            $Hpagelist->addPage($page);
+        }
 
-            return $Hpagelist->finishList();
+        return $Hpagelist->finishList();
     }
 
 
@@ -216,7 +218,8 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
      *      multi, chosen, tagimage, pagesearch, pagesearchlabel, cache, rsort, labels, noneonclear, tagimagecolumn,
      *      tagcolumn (optional), excludeNs, withTags, excludeTags, images, count, tagintersect
      */
-    public function parseFlags($flags){
+    public function parseFlags($flags)
+    {
         $conf = [
             'multi' => false,
             'chosen' => false,
@@ -235,15 +238,15 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
             'count' => false,
             'tagintersect' => false,
         ];
-        if(!is_array($flags)) {
+        if (!is_array($flags)) {
             return $conf;
         }
 
-        foreach($flags as $flag) {
-            list($flag,$value) = array_pad(explode('=',$flag,2), 2, '');
+        foreach ($flags as $flag) {
+            list($flag, $value) = array_pad(explode('=', $flag, 2), 2, '');
             $flag = trim($flag);
             $value = trim($value);
-            switch($flag) {
+            switch ($flag) {
                 case 'multi':
                     $conf['multi'] = true;
                     break;
@@ -251,11 +254,11 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
                     $conf['chosen'] = true;
                     break;
                 case 'tagimage':
-                    $conf['tagimage']= true;
+                    $conf['tagimage'] = true;
                     break;
                 case 'pagesearch':
-                    $conf['pagesearch']= true;
-                    if($value != ''){
+                    $conf['pagesearch'] = true;
+                    if ($value != '') {
                         $conf['pagesearchlabel'] = hsc($value);
                     }
                     break;
@@ -269,7 +272,7 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
                     $conf['tagcolumn'][] = $value;
                     break;
                 case 'tagimagecolumn':
-                    $conf['tagimagecolumn'][] = explode('=', $value,2);
+                    $conf['tagimagecolumn'][] = explode('=', $value, 2);
                     break;
                 case 'rsort':
                     $conf['rsort'] = true;
@@ -281,13 +284,13 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
                     $conf['noneonclear'] = true;
                     break;
                 case 'excludeNs':
-                    $conf['excludeNs'] = explode(',', $value,2); //TODO really maximum of two namespaces?
+                    $conf['excludeNs'] = explode(',', $value, 2); //TODO really maximum of two namespaces?
                     break;
                 case 'withTags':
-                    $conf['withTags'] = explode(',', $value,2); //TODO really maximum of two tags?
+                    $conf['withTags'] = explode(',', $value, 2); //TODO really maximum of two tags?
                     break;
                 case 'excludeTags':
-                    $conf['excludeTags'] = explode(',', $value,2); //TODO really maximum of two tags?
+                    $conf['excludeTags'] = explode(',', $value, 2); //TODO really maximum of two tags?
                     break;
                 case 'images':
                     $conf['images'] = true;
@@ -319,24 +322,25 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
      *              return value is ignored for files
      * @author  Andreas Gohr <andi@splitbrain.org>
      */
-    public function search_all_pages(&$data,$base,$file,$type,$lvl,$opts){
+    public function search_all_pages(&$data, $base, $file, $type, $lvl, $opts)
+    {
         global $conf;
 
         //we do nothing with directories
-        if($type == 'd') {
+        if ($type == 'd') {
             return true;
         }
 
         //only search txt files
-        if(substr($file,-4) == '.txt'){
-            foreach($opts['excludeNs'] as $excludeNs) {
-                if(strpos($file, str_replace(':','/',$excludeNs)) === 0) {
+        if (substr($file, -4) == '.txt') {
+            foreach ($opts['excludeNs'] as $excludeNs) {
+                if (strpos($file, str_replace(':', '/', $excludeNs)) === 0) {
                     return true;
                 }
             }
 
             //check ACL
-            $data[] = $conf['datadir'].'/'.$file;
+            $data[] = $conf['datadir'] . '/' . $file;
         }
         return false;
     }

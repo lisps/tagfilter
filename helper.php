@@ -91,7 +91,7 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
      */
     public function matchesTagExpression($tagExpression, $tag)
     {
-        return (bool) @preg_match('/^'.$tagExpression.'$/i', $tag);
+        return (bool)@preg_match('/^' . $tagExpression . '$/i', $tag);
     }
 
     /**
@@ -216,11 +216,11 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
         return file($fn, FILE_IGNORE_NEW_LINES);
     }
 
-    /** @var string  */
+    /** @var string */
     protected $ps_ns = '';
-    /** @var array  */
+    /** @var array */
     protected $ps_pages_id = [];
-    /** @var array  */
+    /** @var array */
     protected $ps_pages = [];
 
     /**
