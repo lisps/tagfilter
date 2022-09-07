@@ -118,8 +118,8 @@ class action_plugin_tagfilter extends DokuWiki_Action_Plugin
         //partially copied from tag->helper with less checks and no meta lookups
         $page_names = [];
         foreach ($tag_list_r as $key => $tag_list) {
-            $tags_parsed = $Htag->_parseTagList($tag_list, true);
-            $pages_lookup = $Htag->_tagIndexLookup($tags_parsed);
+            $tags_parsed = $Htag->parseTagList($tag_list, true);
+            $pages_lookup = $Htag->getIndexedPagesMatchingTagQuery($tags_parsed);
             foreach ($pages_lookup as $page_lookup) {
                 // filter by namespace, root namespace is identified with a dot
                 // root namespace is specified, discard all pages who lay outside the root namespace

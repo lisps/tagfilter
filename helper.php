@@ -185,7 +185,7 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
         $pages = $indexer->lookupKey('subject', $tag, [$this, 'tagCompare']);
 
         foreach ($pages as $page) {
-            if ($Htag->_isVisible($page, $ns)) {
+            if ($Htag->isVisible($page, $ns)) {
                 if (!$aclSafe) {
                     return true;
                 }
@@ -446,8 +446,8 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
      */
     public function getPagesByTags($ns, $tag_list)
     {
-        $tags_parsed = $this->Htag->_parseTagList($tag_list, true);
-        $pages_lookup = $this->Htag->_tagIndexLookup($tags_parsed);
+        $tags_parsed = $this->Htag->parseTagList($tag_list, true);
+        $pages_lookup = $this->Htag->getIndexedPagesMatchingTagQuery($tags_parsed);
 
         $page_names = [];
         foreach ($pages_lookup as $page_lookup) {
@@ -531,7 +531,7 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
         $Htag = $this->Htag;
         if (!$Htag) return [];
 
-        $tags = $Htag->_parseTagList($tags, false); //array
+        $tags = $Htag->parseTagList($tags, false); //array
 
         $indexer = idx_get_indexer();
         $indexTags = array_keys($indexer->histogram(1, 0, 3, 'subject'));
@@ -547,7 +547,7 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
 
         $matchedPages = [];
         foreach ($matchedTags as $tag) {
-            $pages = $Htag->_tagIndexLookup([$tag]);
+            $pages = $Htag->getIndexedPagesMatchingTagQuery([$tag]);
 
             // keep only if in requested ns
             $matchedPages[$tag] = array_filter($pages, function ($pageid) use ($ns) {
