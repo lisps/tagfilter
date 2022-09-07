@@ -476,15 +476,15 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
     /**
      * Used by pagelist plugin for filling the cell of the table header
      *
-     * @param string $tag
+     * @param string $column column name is a tagexpression
      * @return string
      */
-    public function th($tag = '')
+    public function th($column = '')
     {
-        if (strpos($tag, '*')) {
-            return $this->getTagCategory($tag);
+        if (strpos($column, '*')) {
+            return $this->getTagCategory($column);
         } else {
-            return $this->getTagLabel($tag);
+            return $this->getTagLabel($column);
         }
     }
 
@@ -496,17 +496,20 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
      * and in listing by the tagfilter
      *
      * @param string $id page id of row
-     * @param string $col tagexpression: regexp pattern of wanted tags e.g. "status:.*" as column name FIXME pagelist allows only one column!!! does not forward column name
+     * @param string $column column name is a tagexpression: regexp pattern of wanted tags e.g. "status:.*". Supported since 2022 in pagelist plugin
      * @return string
      */
-    public function td($id, $col = null)
+    public function td($id, $column = null)
     {
+        if($column === null) {
+            return '';
+        }
         if (!isset($this->tagsPerPage[$id])) {
             $this->tagsPerPage[$id] = $this->getTagsByPageID($id);
         }
         $foundTags = [];
         foreach ($this->tagsPerPage[$id] as $tag) {
-            if ($this->matchesTagExpression($col, $tag)) {
+            if ($this->matchesTagExpression($column, $tag)) {
                 $foundTags[] = hsc($this->getTagLabel($tag));
             }
         }
