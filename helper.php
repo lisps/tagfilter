@@ -14,14 +14,14 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
      *
      * @var helper_plugin_tag
      */
-    protected $Htag;
+    protected $taghelper;
 
     /**
      * Constructor gets default preferences and language strings
      */
     public function __construct()
     {
-        $this->Htag = $this->loadHelper('tag');
+        $this->taghelper = $this->loadHelper('tag');
     }
 
     public function getMethods()
@@ -64,8 +64,7 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
      */
     public function getTagsByRegExp($tagExpression, $ns = '', $aclSafe = false)
     {
-        $Htag = $this->Htag;
-        if (!$Htag) {
+        if (!$this->taghelper) {
             return false;
         }
 
@@ -117,7 +116,7 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
      */
     public function getTagsByNamespace($ns = '', $aclSafe = true)
     {
-        if (!$this->Htag) {
+        if (!$this->taghelper) {
             return false;
         }
 
@@ -153,8 +152,8 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
     /**
      * Returns true if tags are equal
      *
-     * @param string $tag1
-     * @param string $tag2
+     * @param string $tag1 tag being searched
+     * @param string $tag2 tag from index
      * @return bool whether equal tags
      */
     public function tagCompare($tag1, $tag2)
@@ -176,8 +175,7 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
         if ($ns == '') {
             return true;
         }
-        $Htag = $this->Htag;
-        if (!$Htag) {
+        if (!$this->taghelper) {
             return false;
         }
 
@@ -185,7 +183,7 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
         $pages = $indexer->lookupKey('subject', $tag, [$this, 'tagCompare']);
 
         foreach ($pages as $page) {
-            if ($Htag->isVisible($page, $ns)) {
+            if ($this->taghelper->isVisible($page, $ns)) {
                 if (!$aclSafe) {
                     return true;
                 }
@@ -262,7 +260,7 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
         $tags = $this->getTagsByRegExp($tagExpression, $this->ps_ns);
         $pages = [];
         foreach ($tags as $t => $v) {
-            $Hpages = $this->Htag->getTopic($this->ps_ns, null, $t);
+            $Hpages = $this->taghelper->getTopic($this->ps_ns, null, $t);
             foreach ($Hpages as $p) {
                 $pages[] = $p['id'];
                 if (!isset($this->ps_pages[$p['id']])) {
@@ -283,7 +281,7 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
         $tags = $this->getTagsByRegExp($tagExpression, $this->ps_ns);
         $pages = array();
         foreach ($tags as $t => $v) {
-            $Hpages = $this->Htag->getTopic($this->ps_ns, '', $t);
+            $Hpages = $this->taghelper->getTopic($this->ps_ns, '', $t);
             foreach ($Hpages as $p) {
                 $pages[] = $p['id'];
             }
@@ -301,7 +299,7 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
         $tags = $this->getTagsByRegExp($tagExpression, $this->ps_ns);
         $pages = array();
         foreach ($tags as $t => $v) {
-            $Hpages = $this->Htag->getTopic($this->ps_ns, '', $t);
+            $Hpages = $this->taghelper->getTopic($this->ps_ns, '', $t);
             foreach ($Hpages as $p) {
                 $pages[] = $p['id'];
                 if (!isset($this->ps_pages[$p['id']])) {
@@ -312,8 +310,6 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
         $pages = array_unique($pages);
         $this->ps_pages_id = array_merge($this->ps_pages_id, $pages);
         $this->ps_pages_id = array_unique($this->ps_pages_id);
-
-        //print_r($this->ps_pages_id);
     }
 
     /**
@@ -334,7 +330,7 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
      */
     public function getImageLinkByTag($tag)
     {
-        $id = $this->getConf('nsTagImage') . ':' . str_replace(array(' ', ':'), '_', $tag);
+        $id = $this->getConf('nsTagImage') . ':' . str_replace([' ', ':'], '_', $tag);
         $src = $id . '.jpg';
         if (!@file_exists(mediaFN($src))) {
             $src = $id . '.png';
@@ -446,20 +442,19 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
      */
     public function getPagesByTags($ns, $tag_list)
     {
-        $tags_parsed = $this->Htag->parseTagList($tag_list, true);
-        $pages_lookup = $this->Htag->getIndexedPagesMatchingTagQuery($tags_parsed);
+        $tags = $this->taghelper->parseTagList($tag_list, true);
+        $matchedPages = $this->taghelper->getIndexedPagesMatchingTagQuery($tags);
 
-        $page_names = [];
-        foreach ($pages_lookup as $page_lookup) {
+        $filteredPages = [];
+        foreach ($matchedPages as $matchedPage) {
             // filter by namespace, root namespace is identified with a dot // root namespace is specified, discard all pages who lay outside the root namespace
-            if (($ns == '.' && getNS($page_lookup) === false) || strpos(':' . getNS($page_lookup) . ':', ':' . $ns . ':') === 0 || $ns === '') {
-                $perm = auth_quickaclcheck($page_lookup);
-                if (!($perm < AUTH_READ)) {
-                    $page_names[] = $page_lookup;
+            if (($ns == '.' && getNS($matchedPage) === false) || strpos(':' . getNS($matchedPage) . ':', ':' . $ns . ':') === 0 || $ns === '') {
+                if (auth_quickaclcheck($matchedPage) >= AUTH_READ) {
+                    $filteredPages[] = $matchedPage;
                 }
             }
         }
-        return $page_names;
+        return $filteredPages;
     }
 
     /**
@@ -530,11 +525,9 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
      */
     public function getPagesByMatchedTags($tags, $ns = '')
     {
+        if (!$this->taghelper) return [];
 
-        $Htag = $this->Htag;
-        if (!$Htag) return [];
-
-        $tags = $Htag->parseTagList($tags, false); //array
+        $tags = $this->taghelper->parseTagList($tags, false); //array
 
         $indexer = idx_get_indexer();
         $indexTags = array_keys($indexer->histogram(1, 0, 3, 'subject'));
@@ -550,7 +543,7 @@ class helper_plugin_tagfilter extends DokuWiki_Plugin
 
         $matchedPages = [];
         foreach ($matchedTags as $tag) {
-            $pages = $Htag->getIndexedPagesMatchingTagQuery([$tag]);
+            $pages = $this->taghelper->getIndexedPagesMatchingTagQuery([$tag]);
 
             // keep only if in requested ns
             $matchedPages[$tag] = array_filter($pages, function ($pageid) use ($ns) {
