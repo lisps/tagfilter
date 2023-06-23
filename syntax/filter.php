@@ -215,15 +215,32 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin
                 }
             }
 
+            if (empty($flags['include'])) {
+                if (!$htmlPerUserCache->useCache(['files' => [$filterDataCache->cache]])) {
+                    $html = $this->htmlOutput($tagFilters, $allPageids, $preparedPages, $opt);
+                    $htmlPerUserCache->storeCache($html);
+                } else {
+                    $html = $htmlPerUserCache->retrieveCache();
+                }
 
-            if (!$htmlPerUserCache->useCache(['files' => [$filterDataCache->cache]])) {
-                $html = $this->htmlOutput($tagFilters, $allPageids, $preparedPages, $opt);
-                $htmlPerUserCache->storeCache($html);
+                $renderer->doc .= $html;
             } else {
-                $html = $htmlPerUserCache->retrieveCache();
-            }
+                // Use include plugin. Does not use the htmlPerUserCache. TODO?
 
-            $renderer->doc .= $html;
+                // attention: htmlPrepareOutput modifies $tagFilters, $allPageids, $preparedPages.
+                $this->htmlPrepareOutput($tagFilters, $allPageids, $preparedPages, $opt);
+                $renderer->doc .= $this->htmlFormOutput($tagFilters, $allPageids, $opt);
+                $renderer->doc .= "<div id='tagfilter_ergebnis_" . $opt['id'] . "' class='tagfilter'>";
+
+                $includeHelper = $this->loadHelper('include');
+                $includeFlags = $includeHelper->get_flags($flags['include']);
+
+                foreach($preparedPages as $page) {
+                    $renderer->nest($includeHelper->_get_instructions($page['id'], '', 'page', 0, $includeFlags));
+                }
+
+                $renderer->doc .= "</div>";
+            }
         }
         return true;
     }
@@ -416,5 +433,4 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin
 
         return $output;
     }
-
 }

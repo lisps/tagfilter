@@ -90,85 +90,46 @@ function tagfilter_submit(id,ns,flags)
 		});
 	}
 
-	if(pagesearch.length == 0 && page_idx == 0) { //nothings selected => show all
-
-		jQuery('#tagfilter_ergebnis_'+id+'.tagfilter > ul li').each(function (){
-			if(flags[1]['noneonclear']) {
-				var $tr = jQuery(this);
-		        var $link = $tr.find('td.page a');
-				if($link.length == 0) {
-		        	$tr.show();
-		        	return;
-		        }
-				$tr.hide();
-			} else {
-				jQuery(this).show();
-			}
-			
-		});
-		
-		jQuery('#tagfilter_ergebnis_'+id+'.tagfilter table tr').each(function (){
-			if(flags[1]['noneonclear']) {
-				var $tr = jQuery(this);
-		        var $link = $tr.find('td.page a');
-				if($link.length == 0) {
-		        	$tr.show();
-		        	return;
-		        }
-				$tr.hide();
-			} else {
-				jQuery(this).show();
-			}
-		});
 
 
-	} else {
-	
-		var pages_filtered = new Array();
-		pages_filtered = pages.shift();
-		jQuery.each(pages,function(index,page_r) { //intersect pages
-			pages_filtered = jQuery(pages_filtered).filter(page_r);
-		});
-		
-		if(page_idx == 0 && pagesearch.length != 0) { 
+	let pages_filtered = pages.length == 0 ? [] : pages.reduce(
+		(accumulator, currentValue) => accumulator.filter(elt => currentValue.includes(elt))
+	);
+
+	if (pagesearch.length != 0) {
+		if(page_idx == 0) {
 			pages_filtered = pagesearch;
-		} else if (pagesearch.length != 0) { //intersect pagesearch
-			pages_filtered = jQuery(pages_filtered).filter(pagesearch);
+		} else { //intersect pagesearch
+			pages_filtered = pages_filtered.filter(elt => pagesearch.includes(elt));
 		}
-		
-	    
-	  //loop all found searchentries
-	    jQuery('#tagfilter_ergebnis_'+id+'.tagfilter > ul li').each(function (e){
-	        var $tr = jQuery(this);
-	        var $link = $tr.find('a');
-	        if($link.length == 0) {
-	        	$tr.show();
-	        	return;
-	        }
-	        var id = $link.attr('title');
-	        
-	        if(jQuery.inArray(id,pages_filtered) == -1) {
-	        	$tr.hide();
-	        } else {
-	        	$tr.show();
-	        }
-	    });
-	    jQuery('#tagfilter_ergebnis_'+id+'.tagfilter table tr').each(function (){
-	    	var $tr = jQuery(this);
-	        var $link = $tr.find('a');
-	        if($link.length == 0) {
-	        	$tr.show();
-	        	return;
-	        }
-	        var id = $link.attr('title');
-	        
-	        if(jQuery.inArray(id,pages_filtered) == -1) {
-	        	$tr.hide();
-	        } else {
-	        	$tr.show();
-	        }
-		});
 	}
+
+	const presentAll = pagesearch.length == 0 && page_idx == 0 && !flags[1]['noneonclear'];
+
+	//loop all found searchentries
+	document
+		.querySelectorAll('#tagfilter_ergebnis_'+id+'.tagfilter :is(ul > li, table tr, div.plugin_include_content)')
+		.forEach(elt => {
+			let pageId;
+			switch(elt.nodeName) {
+				case 'DIV': // handling for include plugin
+					const prefix = 'plugin_include__';
+					pageId = Array.from(elt.classList)
+						.filter(a => a.startsWith(prefix))[0]
+						.substring(prefix.length);
+					break;
+				case 'TR': // handling for pagelist plugin, style=table
+				case 'LI': // handling for pagelist plugin, style=simplelist
+					pageId = elt.querySelector('a')?.title;
+					break;
+				default:
+					throw new Error('Unexpected element:' + elt.nodeName);
+			}
+
+			elt.style.display = (presentAll || pages_filtered.includes(pageId)) ? '' : 'none';
+		});
+
+
 	if(flags[1]['count']) {
 		if(jQuery('#tagfilter_ergebnis_'+id+' tr > td[class=page]').length > 0) {
 			jQuery('#__tagfilter_'+id).find('.tagfilter_count_number').text(
