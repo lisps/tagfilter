@@ -237,6 +237,7 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
             'images' => false,
             'count' => false,
             'tagintersect' => false,
+            'include' => false,
         ];
         if (!is_array($flags)) {
             return $conf;
@@ -300,6 +301,9 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
                     break;
                 case 'tagintersect':
                     $conf['tagintersect'] = true;
+                    break;
+                case 'include':
+                    $conf['include'] = true;
                     break;
             }
         }
