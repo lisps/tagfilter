@@ -95,11 +95,6 @@ function tagfilter_submit(id,ns,flags)
 		jQuery('#tagfilter_ergebnis_'+id+'.tagfilter > ul li').each(function (){
 			if(flags[1]['noneonclear']) {
 				var $tr = jQuery(this);
-		        var $link = $tr.find('td.page a');
-				if($link.length == 0) {
-		        	$tr.show();
-		        	return;
-		        }
 				$tr.hide();
 			} else {
 				jQuery(this).show();
