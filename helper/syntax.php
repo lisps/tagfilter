@@ -215,10 +215,10 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
      *
      * @param array $flags array with (all optional):
      *      multi, chosen, tagimage, pagesearch, cacheage, nocache, rsort, nolabels, noneonclear, tagimagecolumn,
-     *      tagcolumn, excludeNs, withTags, excludeTags, images, count, tagintersect
+     *      tagcolumn, excludeNs, withTags, excludeTags, images, count, tagintersect, sortbypageid
      * @return array tagfilter flags with:
      *      multi, chosen, tagimage, pagesearch, pagesearchlabel, cache, rsort, labels, noneonclear, tagimagecolumn,
-     *      tagcolumn (optional), excludeNs, withTags, excludeTags, images, count, tagintersect
+     *      tagcolumn (optional), excludeNs, withTags, excludeTags, images, count, tagintersect, sortbypageid
      */
     public function parseFlags($flags)
     {
