@@ -108,7 +108,11 @@ function tagfilter_submit(id,ns,flags)
 
 	//loop all found searchentries
 	document
-		.querySelectorAll('#tagfilter_ergebnis_'+id+'.tagfilter :is(ul > li, table tr, div.plugin_include_content)')
+		.querySelectorAll(`
+			#tagfilter_ergebnis_${id}.tagfilter > ul > li,
+			#tagfilter_ergebnis_${id}.tagfilter > div.table > table.inline tr,
+			#tagfilter_ergebnis_${id}.tagfilter > div.plugin_include_content
+		`)
 		.forEach(elt => {
 			let pageId;
 			switch(elt.nodeName) {
