@@ -215,10 +215,10 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
      *
      * @param array $flags array with (all optional):
      *      multi, chosen, tagimage, pagesearch, cacheage, nocache, rsort, nolabels, noneonclear, tagimagecolumn,
-     *      tagcolumn, excludeNs, withTags, excludeTags, images, count, tagintersect, sortbypageid
+     *      tagcolumn, excludeNs, withTags, excludeTags, images, count, tagintersect, sortbypageid, include
      * @return array tagfilter flags with:
      *      multi, chosen, tagimage, pagesearch, pagesearchlabel, cache, rsort, labels, noneonclear, tagimagecolumn,
-     *      tagcolumn (optional), excludeNs, withTags, excludeTags, images, count, tagintersect, sortbypageid
+     *      tagcolumn (optional), excludeNs, withTags, excludeTags, images, count, tagintersect, sortbypageid, include
      */
     public function parseFlags($flags)
     {
@@ -239,7 +239,8 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
             'images' => false,
             'count' => false,
             'tagintersect' => false,
-            'sortbypageid' => false
+            'sortbypageid' => false,
+            'include' => [],
         ];
         if (!is_array($flags)) {
             return $conf;
@@ -306,6 +307,9 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
                     break;
                 case 'sortbypageid':
                     $conf['sortbypageid'] = true;
+                    break;
+                case 'include':
+                    $conf['include'] = explode(';', $value);
                     break;
             }
         }

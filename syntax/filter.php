@@ -215,15 +215,32 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin
                 }
             }
 
+            if (empty($flags['include'])) {
+                if (!$htmlPerUserCache->useCache(['files' => [$filterDataCache->cache]])) {
+                    $html = $this->htmlOutput($tagFilters, $allPageids, $preparedPages, $opt);
+                    $htmlPerUserCache->storeCache($html);
+                } else {
+                    $html = $htmlPerUserCache->retrieveCache();
+                }
 
-            if (!$htmlPerUserCache->useCache(['files' => [$filterDataCache->cache]])) {
-                $html = $this->htmlOutput($tagFilters, $allPageids, $preparedPages, $opt);
-                $htmlPerUserCache->storeCache($html);
+                $renderer->doc .= $html;
             } else {
-                $html = $htmlPerUserCache->retrieveCache();
-            }
+                // Use include plugin. Does not use the htmlPerUserCache. TODO?
 
-            $renderer->doc .= $html;
+                // attention: htmlPrepareOutput modifies $tagFilters, $allPageids, $preparedPages.
+                $this->htmlPrepareOutput($tagFilters, $allPageids, $preparedPages, $opt);
+                $renderer->doc .= $this->htmlFormOutput($tagFilters, $allPageids, $opt);
+                $renderer->doc .= "<div id='tagfilter_ergebnis_" . $opt['id'] . "' class='tagfilter'>";
+
+                $includeHelper = $this->loadHelper('include');
+                $includeFlags = $includeHelper->get_flags($flags['include']);
+
+                foreach($preparedPages as $page) {
+                    $renderer->nest($includeHelper->_get_instructions($page['id'], '', 'page', 0, $includeFlags));
+                }
+
+                $renderer->doc .= "</div>";
+            }
         }
         return true;
     }
@@ -239,13 +256,19 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin
      */
     private function htmlOutput($tagFilters, $allPageids, $preparedPages, array $opt)
     {
+        // attention: htmlPrepareOutput modifies $tagFilters, $allPageids, $preparedPages.
+        $this->htmlPrepareOutput($tagFilters, $allPageids, $preparedPages, $opt);
+
+        $output = $this->htmlFormOutput($tagFilters, $allPageids, $opt)
+            . $this->htmlPagelistOutput($preparedPages, $opt);
+
+        return $output;
+    }
+
+    private function htmlPrepareOutput(&$tagFilters, &$allPageids, &$preparedPages, array $opt)
+    {
         /* @var helper_plugin_tagfilter $Htagfilter */
         $Htagfilter = $this->loadHelper('tagfilter');
-        /* @var  helper_plugin_tagfilter_syntax $HtagfilterSyntax */
-        $HtagfilterSyntax = $this->loadHelper('tagfilter_syntax');
-        $flags = $opt['tagfilterFlags'];
-
-        $output = '';
 
         //check for read access
         foreach ($allPageids as $key => $pageid) {
@@ -272,6 +295,14 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin
                 unset($preparedPages[$key]);
             }
         }
+    }
+
+    private function htmlFormOutput($tagFilters, $allPageids, array $opt) {
+        /* @var helper_plugin_tagfilter $Htagfilter */
+        $Htagfilter = $this->loadHelper('tagfilter');
+
+        $flags = $opt['tagfilterFlags'];
+        $output = '';
 
         $form = new Doku_Form([
             'id' => 'tagdd_' . $opt['id'],
@@ -386,12 +417,20 @@ class syntax_plugin_tagfilter_filter extends DokuWiki_Syntax_Plugin
         $form->endFieldset();
         $output .= $form->getForm();//Form Ausgeben
 
+        return $output;
+    }
+
+    private function htmlPagelistOutput($preparedPages, array $opt) {
+        /* @var  helper_plugin_tagfilter_syntax $HtagfilterSyntax */
+        $HtagfilterSyntax = $this->loadHelper('tagfilter_syntax');
+
+        $output = '';
+
         $output .= "<div id='tagfilter_ergebnis_" . $opt['id'] . "' class='tagfilter'>";
         //dbg($opt['pagelistFlags']);
-        $output .= $HtagfilterSyntax->renderList($preparedPages, $flags, $opt['pagelistFlags']);
+        $output .= $HtagfilterSyntax->renderList($preparedPages, $opt['tagfilterFlags'], $opt['pagelistFlags']);
         $output .= "</div>";
 
         return $output;
     }
-
 }
