@@ -307,6 +307,7 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
                     break;
                 case 'sortbypageid':
                     $conf['sortbypageid'] = true;
+                    break;
                 case 'include':
                     $conf['include'] = explode(';', $value);
                     break;
