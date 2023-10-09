@@ -120,7 +120,7 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
                 $INFO['filepath'],
                 wikiFN($page)
             ]];
-            $cache_key = 'plugin_tagfilter_' . $ID . '_' . $page;
+            $cache_key = implode('_', ['plugin_tagfilter', $ID, $page, $flags['sortbypageid']]);
             $cache = new Cache($cache_key, '.tpcache');
             if (!$cache->useCache($depends)) {
                 $title = p_get_metadata($page, 'title', METADATA_DONT_RENDER);
@@ -128,7 +128,9 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
                 $cache_page = [
                     'title' => $title ?: $page,
                     'id' => $page,
-                    'tmp_id' => $title ?: (noNS($page) ?: $page),
+                    'tmp_id' => $flags['sortbypageid']
+                        ? $page
+                        : ($title ?: (noNS($page) ?: $page)),
                 ];
 
                 foreach ($flags['tagcolumn'] as $tagcolumn) {
@@ -213,10 +215,10 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
      *
      * @param array $flags array with (all optional):
      *      multi, chosen, tagimage, pagesearch, cacheage, nocache, rsort, nolabels, noneonclear, tagimagecolumn,
-     *      tagcolumn, excludeNs, withTags, excludeTags, images, count, tagintersect, include
+     *      tagcolumn, excludeNs, withTags, excludeTags, images, count, tagintersect, sortbypageid, include
      * @return array tagfilter flags with:
      *      multi, chosen, tagimage, pagesearch, pagesearchlabel, cache, rsort, labels, noneonclear, tagimagecolumn,
-     *      tagcolumn (optional), excludeNs, withTags, excludeTags, images, count, tagintersect, include
+     *      tagcolumn (optional), excludeNs, withTags, excludeTags, images, count, tagintersect, sortbypageid, include
      */
     public function parseFlags($flags)
     {
@@ -237,6 +239,7 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
             'images' => false,
             'count' => false,
             'tagintersect' => false,
+            'sortbypageid' => false,
             'include' => [],
         ];
         if (!is_array($flags)) {
@@ -302,6 +305,8 @@ class helper_plugin_tagfilter_syntax extends DokuWiki_Plugin
                 case 'tagintersect':
                     $conf['tagintersect'] = true;
                     break;
+                case 'sortbypageid':
+                    $conf['sortbypageid'] = true;
                 case 'include':
                     $conf['include'] = explode(';', $value);
                     break;

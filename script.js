@@ -91,7 +91,6 @@ function tagfilter_submit(id,ns,flags)
 	}
 
 
-
 	let pages_filtered = pages.length == 0 ? [] : pages.reduce(
 		(accumulator, currentValue) => accumulator.filter(elt => currentValue.includes(elt))
 	);
