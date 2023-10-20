@@ -106,10 +106,20 @@ function tagfilter_submit(id,ns,flags)
 	const presentAll = pagesearch.length == 0 && page_idx == 0 && !flags[1]['noneonclear'];
 
 	//loop all found searchentries
+	/*
+	 * Handle all pagelist styles,
+	 * cf. https://github.com/dokufreaks/plugin-pagelist/blob/e48b7725cf940d21381ef32851bf82aa6736ee9c/helper.php#L334
+         * standard:   div.table > table.pagelist.plgn__pglist"
+	 * table:      div.table > table.inline.plgn__pglist"
+         * list:       div.table > table.ul.plgn__pglist"
+	 * simplelist: ul > li
+	 *
+	 * Handle include plugin style: div.plugin_include_content
+	 */
 	document
 		.querySelectorAll(`
+			#tagfilter_ergebnis_${id}.tagfilter > div.table > table.plgn__pglist > tbody > tr,
 			#tagfilter_ergebnis_${id}.tagfilter > ul > li,
-			#tagfilter_ergebnis_${id}.tagfilter > div.table > table.inline tr,
 			#tagfilter_ergebnis_${id}.tagfilter > div.plugin_include_content
 		`)
 		.forEach(elt => {
