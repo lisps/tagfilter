@@ -14,12 +14,9 @@ function getSelectByFormId(id){
 
 function tagfilter_cleanform(id,refresh){
 	//elements = getElementsByClass('tagdd_select',document.getElementById('tagdd_'+id),'select');
-	var $elements = getSelectByFormId(id);
-	$elements.select2('val','');
-
+	const $elements = getSelectByFormId(id);
+	$elements.val('');
 	if(refresh) $elements[0].onchange();
-
-	
 }
 
 function tagfilter_submit(id,ns,flags)
