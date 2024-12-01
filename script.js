@@ -2,7 +2,7 @@
 /* DOKUWIKI:include_once script/select2/select2_locale_de.js */
 /* DOKUWIKI:include_once script/jquery.history.js */
 /**
- * DokuWiki Plugin tagfilter (JavaScript Component) 
+ * DokuWiki Plugin tagfilter (JavaScript Component)
  *
  * @license GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author  lisps
@@ -15,7 +15,8 @@ function getSelectByFormId(id){
 function tagfilter_cleanform(id,refresh){
 	//elements = getElementsByClass('tagdd_select',document.getElementById('tagdd_'+id),'select');
 	const $elements = getSelectByFormId(id);
-	$elements.val('');
+	$elements.val(''); // neccessary if `chosen` is not set
+	$elements.select2('val',''); // neccessary if `chosen` is set
 	if(refresh) $elements[0].onchange();
 }
 
@@ -25,7 +26,7 @@ function tagfilter_submit(id,ns,flags)
 	var pagesearch= new Array();
 	var $elements = getSelectByFormId(id);
 
-	
+
 	var tags = jQuery('#tagdd_'+id).data('tags');
 
 	jQuery.each(tags,function(index,select_r) {
@@ -35,7 +36,7 @@ function tagfilter_submit(id,ns,flags)
 			});
 		});
 	});
-	
+
 	count = 0;
 	for(var i=0;i<$elements.length;i++){
 		e = $elements[i];
@@ -44,7 +45,7 @@ function tagfilter_submit(id,ns,flags)
 		for(var k=0;k<e.options.length;k++){
 			if(e.options[k].selected && e.options[k].value != ''){
 				if(e.id == '__tagfilter_page_'+id) {
-					pagesearch.push(e.options[k].value);	
+					pagesearch.push(e.options[k].value);
 				}
 				else {
 					form[i].push(e.options[k].value);
@@ -53,37 +54,37 @@ function tagfilter_submit(id,ns,flags)
 			}
 		}
 	}
-	
+
 	if(flags[1]['pagesearch'] == true) { //delete pagesearch element
 		form.shift();
 	}
-	
+
 	var pages = new Array();
 	var page_idx = 0;
-	
+
 	jQuery.each(form,function(index,select) { //loop through select boxes and collect the pages
-		if(jQuery.isArray(select) && select.length) {	
+		if(jQuery.isArray(select) && select.length) {
 			pages[page_idx] = new Array();
 			jQuery.each(select,function(index2,tag) {
 				pages[page_idx] = jQuery.merge(pages[page_idx],tags[index][tag]);
 			});
 			pages[page_idx] = jQuery.unique(pages[page_idx]);
 			page_idx++;
-		} 
+		}
 	});
-	
+
 	if(flags[1]['tagintersect'] == true) {
 		// Tags intersection
 		page_idx = 0;
 		jQuery.each(form,function(index,select) { //loop through select boxes and collect the pages
-			if(jQuery.isArray(select) && select.length) {	
+			if(jQuery.isArray(select) && select.length) {
 				jQuery.each(select,function(index2,tag) {
 					pages[page_idx] = pages[page_idx].filter(function(n) {
 						return tags[index][tag].indexOf(n) !== -1;
 					});
 				});
 				page_idx++;
-			} 
+			}
 		});
 	}
 
@@ -106,16 +107,16 @@ function tagfilter_submit(id,ns,flags)
 	/*
 	 * Handle all pagelist styles,
 	 * cf. https://github.com/dokufreaks/plugin-pagelist/blob/e48b7725cf940d21381ef32851bf82aa6736ee9c/helper.php#L334
-         * standard:   div.table > table.pagelist.plgn__pglist"
-	 * table:      div.table > table.inline.plgn__pglist"
-         * list:       div.table > table.ul.plgn__pglist"
+	 * standard:   div > table.pagelist.plgn__pglist"
+	 * table:      div > table.inline.plgn__pglist"
+	 * list:       div > table.ul.plgn__pglist"
 	 * simplelist: ul > li
 	 *
 	 * Handle include plugin style: div.plugin_include_content
 	 */
 	document
 		.querySelectorAll(`
-			#tagfilter_ergebnis_${id}.tagfilter > div.table > table.plgn__pglist > tbody > tr,
+			#tagfilter_ergebnis_${id}.tagfilter > div > table.plgn__pglist > tbody > tr,
 			#tagfilter_ergebnis_${id}.tagfilter > ul > li,
 			#tagfilter_ergebnis_${id}.tagfilter > div.plugin_include_content
 		`)
@@ -143,13 +144,13 @@ function tagfilter_submit(id,ns,flags)
 	if(flags[1]['count']) {
 		if(jQuery('#tagfilter_ergebnis_'+id+' tr > td[class=page]').length > 0) {
 			jQuery('#__tagfilter_'+id).find('.tagfilter_count_number').text(
-					jQuery('#tagfilter_ergebnis_'+id+' tr:visible > td[class=page]').length + ' / ' + 
-					
+					jQuery('#tagfilter_ergebnis_'+id+' tr:visible > td[class=page]').length + ' / ' +
+
 					jQuery('#tagfilter_ergebnis_'+id+' tr > td[class=page]').length);
 		} else {
 			jQuery('#__tagfilter_'+id).find('.tagfilter_count_number').text(
-					jQuery('#tagfilter_ergebnis_'+id+'.tagfilter li:visible').length + ' / ' + 
-					
+					jQuery('#tagfilter_ergebnis_'+id+'.tagfilter li:visible').length + ' / ' +
+
 					jQuery('#tagfilter_ergebnis_'+id+'.tagfilter li').length);
 		}
 	}
@@ -171,7 +172,7 @@ jQuery().ready(function(){
 		});
 	} else if (History.getState().data.tagfilter) { //Fix for IE9
 		var params = History.getState().data.tagfilter;
-		
+
 		jQuery(params).each(function(k,tf_elmt){
 			var $tf_dd = jQuery('#tagdd_'+tf_elmt.key +' [data-label="'+tf_elmt.label+'"]');
 			if($tf_dd){
@@ -186,16 +187,16 @@ jQuery().ready(function(){
 					val_tmp.push(tf_elmt.value);
 					$tf_dd.val(val_tmp);
 				}
-				else 
+				else
 					$tf_dd.val(tf_elmt.value);
 			}
 		});
 	}
-	
+
 	jQuery('form[data-plugin=tagfilter]').each(function(i,v){
 		jQuery(v).find('select')[0].onchange();
 	});
-	
+
 	jQuery('form[data-plugin=tagfilter]').each(function(i,v){
 		jQuery(v).find('select.chosen').select2({
 			width:'200',
@@ -209,7 +210,7 @@ jQuery().ready(function(){
 	//console.log(jQuery('fieldset'));
 	/**
 	 * put the selected tags into the url for later use (browser history)
-	 * 
+	 *
 	 */
 	jQuery(window).on('beforeunload',function(e){
 		var $tagfilter_r = jQuery('form[data-plugin="tagfilter"]');
@@ -225,7 +226,7 @@ jQuery().ready(function(){
 					var value = $dd.val();
 					var type = jQuery.type(value);
 					if(!value)return;
-					
+
 					//add selected fields to tf_params
 					if(type === 'string') {
 						tf_params.push(encodeURIComponent('tf' + $tagfilter.attr('data-idx')+'_'+$dd.attr('data-label'))+'[]='+encodeURIComponent(value));
@@ -238,23 +239,23 @@ jQuery().ready(function(){
 						});
 					}
 				});
-				
+
 			});
-			
+
 			var state = History.getState();
 
 			var url = state.url.split('?');
 			if(url[1])
 				var url_params = url[1].split('&');
-			else 
+			else
 				var url_params = [];
-				
+
 			var old_params = [];
 			jQuery(url_params).each(function(k,v){
 				if(tagfilter_strpos(v,'tf',0) !== 0) //hack but should almost work ;)
 					old_params.push(v);
 			});
-			
+
 			old_params = old_params.concat(tf_params);
 			//console.log(old_params.join('&'));
 			//console.log(History.getState())
@@ -262,10 +263,10 @@ jQuery().ready(function(){
 			History.replaceState({'tagfilter':tf_object},'tagfilter',url[0] + '?' + old_params.join('&'));
 		}
 	});
-	
+
 });
 /**
- * copied from http://phpjs.org/functions/strpos/ 
+ * copied from http://phpjs.org/functions/strpos/
  */
 function tagfilter_strpos (haystack, needle, offset) {
   // http://kevin.vanzonneveld.net
@@ -281,7 +282,7 @@ function tagfilter_strpos (haystack, needle, offset) {
 
 function tagfilter_selectFormatResult(val) {
 	//console.log('tagfilter_selectFormatResult',val);
-	return (val.text); 
+	return (val.text);
 	/*
 	if(!(value in '.$jsVar.')) {return "";}
 	return [
@@ -299,7 +300,7 @@ function tagfilter_selectFormatSelection(val) {
 	var $select = jQuery(val.element).parent();
 	var tagimage = $select.data('tagimage');
 	var tagtext = "<span>"+val.text+"</span>";
-	
+
 	if(!tagimage) return tagtext;
 	var tagimage_link = tagfilter_container[tagimage][val.id]['link'];
 	if(tagimage && tagimage_link) {
@@ -310,9 +311,9 @@ function tagfilter_selectFormatSelection(val) {
 			"<div style=\'clear:both;\'></div>"
 			].join("");
 	} else {
-		return tagtext; 
+		return tagtext;
 	}
-	
+
 }
 
 jQuery(function(){
@@ -322,11 +323,11 @@ jQuery(function(){
 			allowClear: true,
 			dropdownAutoWidth:true,
 			placeholder: "",
-			
+
 		}).on('change', function(){
 			this.form.submit();
 //			$form = jQuery(this.form);
-//			
+//
 //			jQuery.ajay({
 //				//url:$form.attr('')
 //				data:
@@ -334,4 +335,4 @@ jQuery(function(){
 		});
 	});
 });
- 
+
